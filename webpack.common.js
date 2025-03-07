@@ -7,6 +7,8 @@ const args = require('yargs').argv
 
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const CopyPlugin = require('copy-webpack-plugin');
+
 
 const env = args.envFile
 if (env) {
@@ -34,6 +36,9 @@ const plugins = [
     'process.env.QUADRANTS': JSON.stringify(process.env.QUADRANTS),
     'process.env.ADOBE_LAUNCH_SCRIPT_URL': JSON.stringify(process.env.ADOBE_LAUNCH_SCRIPT_URL),
   }),
+  new CopyPlugin({
+    patterns: [{ from: path.resolve(__dirname, 'src/data'), to: 'data' }],
+  }),
 ]
 
 module.exports = {
@@ -56,6 +61,10 @@ module.exports = {
 
   module: {
     rules: [
+      {
+        test: /\.xlsx$/,
+        use: 'file-loader', // or 'asset/resource' for Webpack 5+
+      },
       {
         test: /\.js$/,
         exclude: /node_modules/,

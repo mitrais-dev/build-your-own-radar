@@ -6,7 +6,7 @@ const _ = {
   uniqBy: require('lodash/uniqBy'),
   each: require('lodash/each'),
 }
-
+const X = require('xlsx')
 const InputSanitizer = require('./inputSanitizer')
 const Radar = require('../models/radar')
 const Quadrant = require('../models/quadrant')
@@ -24,8 +24,7 @@ const featureToggles = config().featureToggles
 const { getDocumentOrSheetId, getSheetName } = require('./urlUtils')
 const { getGraphSize, graphConfig, isValidConfig } = require('../graphing/config')
 const InvalidConfigError = require('../exceptions/invalidConfigError')
-const InvalidContentError = require('../exceptions/invalidContentError')
-const FileNotFoundError = require('../exceptions/fileNotFoundError')
+
 const plotRadar = function (title, blips, currentRadarName, alternativeRadars) {
   if (title.endsWith('.csv')) {
     title = title.substring(0, title.length - 4)
@@ -143,6 +142,36 @@ const plotRadarGraph = function (title, blips, currentRadarName, alternativeRada
   new GraphingRadar(size, radar).init().plot()
 }
 
+const XLSXDocument = function (paramId, sheetName) {
+  var self = {}
+  self.build = function () {
+    fetch('/data/'+ paramId, { mode: 'no-cors' })
+      .then(response => response.blob()) // Convert response to Blob
+      .then(blob => {
+        var fileReader = new FileReader();
+        fileReader.onload = function process(event) {
+          try {
+            var workbook = X.read(event.target.result, { type: 'array' });
+            var roa = X.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false }) || {};
+            var blips = _.map(roa, new InputSanitizer().sanitize);
+            plotRadarGraph('title', blips, sheetName, Object.keys(workbook.Sheets));
+          } catch (exception) {
+            plotErrorMessage(exception);
+          }
+        };
+        fileReader.readAsArrayBuffer(blob);
+      })
+      .catch(exception => plotErrorMessage(exception));
+  }
+
+  self.init = function () {
+    plotLoading()
+    return self
+  }
+
+  return self
+}
+
 const GoogleSheet = function (sheetReference, sheetName) {
   var self = {}
 
@@ -211,93 +240,6 @@ const GoogleSheet = function (sheetReference, sheetName) {
   return self
 }
 
-const CSVDocument = function (url) {
-  var self = {}
-
-  self.build = function () {
-    d3.csv(url)
-      .then(createBlips)
-      .catch((exception) => {
-        const fileNotFoundError = new FileNotFoundError(`Oops! We can't find the CSV file you've entered`)
-        plotErrorMessage(featureToggles.UIRefresh2022 ? fileNotFoundError : exception, 'csv')
-      })
-  }
-
-  var createBlips = function (data) {
-    try {
-      var columnNames = data.columns
-      delete data.columns
-      var contentValidator = new ContentValidator(columnNames)
-      contentValidator.verifyContent()
-      contentValidator.verifyHeaders()
-      var blips = _.map(data, new InputSanitizer().sanitize)
-      featureToggles.UIRefresh2022
-        ? plotRadarGraph(FileName(url), blips, 'CSV File', [])
-        : plotRadar(FileName(url), blips, 'CSV File', [])
-    } catch (exception) {
-      const invalidContentError = new InvalidContentError(ExceptionMessages.INVALID_CSV_CONTENT)
-      plotErrorMessage(featureToggles.UIRefresh2022 ? invalidContentError : exception, 'csv')
-    }
-  }
-
-  self.init = function () {
-    plotLoading()
-    return self
-  }
-
-  return self
-}
-
-const JSONFile = function (url) {
-  var self = {}
-
-  self.build = function () {
-    d3.json(url)
-      .then(createBlips)
-      .catch((exception) => {
-        const fileNotFoundError = new FileNotFoundError(`Oops! We can't find the JSON file you've entered`)
-        plotErrorMessage(featureToggles.UIRefresh2022 ? fileNotFoundError : exception, 'json')
-      })
-  }
-
-  var createBlips = function (data) {
-    try {
-      var columnNames = Object.keys(data[0])
-      var contentValidator = new ContentValidator(columnNames)
-      contentValidator.verifyContent()
-      contentValidator.verifyHeaders()
-      var blips = _.map(data, new InputSanitizer().sanitize)
-      featureToggles.UIRefresh2022
-        ? plotRadarGraph(FileName(url), blips, 'JSON File', [])
-        : plotRadar(FileName(url), blips, 'JSON File', [])
-    } catch (exception) {
-      const invalidContentError = new InvalidContentError(ExceptionMessages.INVALID_JSON_CONTENT)
-      plotErrorMessage(featureToggles.UIRefresh2022 ? invalidContentError : exception, 'json')
-    }
-  }
-
-  self.init = function () {
-    plotLoading()
-    return self
-  }
-
-  return self
-}
-
-const DomainName = function (url) {
-  var search = /.+:\/\/([^\\/]+)/
-  var match = search.exec(decodeURIComponent(url.replace(/\+/g, ' ')))
-  return match == null ? null : match[1]
-}
-
-const FileName = function (url) {
-  var search = /([^\\/]+)$/
-  var match = search.exec(decodeURIComponent(url.replace(/\+/g, ' ')))
-  if (match != null) {
-    return match[1]
-  }
-  return url
-}
 
 const Factory = function () {
   var self = {}
@@ -324,38 +266,41 @@ const Factory = function () {
       }
     })
 
-    const domainName = DomainName(window.location.search.substring(1))
 
-    const paramId = getDocumentOrSheetId()
-    if (paramId && paramId.endsWith('.csv')) {
-      sheet = CSVDocument(paramId)
-      sheet.init().build()
-    } else if (paramId && paramId.endsWith('.json')) {
-      sheet = JSONFile(paramId)
-      sheet.init().build()
-    } else if (domainName && domainName.endsWith('google.com') && paramId) {
-      const sheetName = getSheetName()
-      sheet = GoogleSheet(paramId, sheetName)
-      sheet.init().build()
-    } else {
-      if (!featureToggles.UIRefresh2022) {
-        document.body.style.opacity = '1'
-        document.body.innerHTML = ''
-        const content = d3.select('body').append('div').attr('class', 'input-sheet')
-        plotLogo(content)
-        const bannerText =
-          '<div><h1>Build your own radar</h1><p>Once you\'ve <a href ="https://www.thoughtworks.com/radar/byor">created your Radar</a>, you can use this service' +
-          ' to generate an <br />interactive version of your Technology Radar. Not sure how? <a href ="https://www.thoughtworks.com/radar/byor">Read this first.</a></p></div>'
+    const paramId = getDocumentOrSheetId();
+    const sheetName = getSheetName()
+      console.log(paramId, sheetName);
+    sheet = XLSXDocument(paramId, sheetName)
+    sheet.init().build()
+    // if (paramId && paramId.endsWith('.csv')) {
+    //   sheet = CSVDocument(paramId)
+    //   sheet.init().build()
+    // } else if (paramId && paramId.endsWith('.json')) {
+    //   sheet = JSONFile(paramId)
+    //   sheet.init().build()
+    // } else if (domainName && domainName.endsWith('google.com') && paramId) {
+    //   const sheetName = getSheetName()
+    //   sheet = GoogleSheet(paramId, sheetName)
+    //   sheet.init().build()
+    // } else {
+    //   if (!featureToggles.UIRefresh2022) {
+    //     document.body.style.opacity = '1'
+    //     document.body.innerHTML = ''
+    //     const content = d3.select('body').append('div').attr('class', 'input-sheet')
+    //     plotLogo(content)
+    //     const bannerText =
+    //       '<div><h1>Build your own radar</h1><p>Once you\'ve <a href ="https://www.thoughtworks.com/radar/byor">created your Radar</a>, you can use this service' +
+    //       ' to generate an <br />interactive version of your Technology Radar. Not sure how? <a href ="https://www.thoughtworks.com/radar/byor">Read this first.</a></p></div>'
 
-        plotBanner(content, bannerText)
+    //     plotBanner(content, bannerText)
 
-        plotForm(content)
+    //     plotForm(content)
 
-        plotFooter(content)
-      }
+    //     plotFooter(content)
+    //   }
 
       setDocumentTitle()
-    }
+    // }
   }
 
   return self
@@ -410,29 +355,6 @@ function plotFooter(content) {
 
 function plotBanner(content, text) {
   content.append('div').attr('class', 'input-sheet__banner').html(text)
-}
-
-function plotForm(content) {
-  content
-    .append('div')
-    .attr('class', 'input-sheet__form')
-    .append('p')
-    .html(
-      '<strong>Enter the URL of your <a href="https://www.thoughtworks.com/radar/byor" target="_blank">Google Sheet, CSV or JSON</a> file below…</strong>',
-    )
-
-  var form = content.select('.input-sheet__form').append('form').attr('method', 'get')
-
-  form
-    .append('input')
-    .attr('type', 'text')
-    .attr('name', 'sheetId')
-    .attr('placeholder', 'e.g. https://docs.google.com/spreadsheets/d/<sheetid> or hosted CSV/JSON file')
-    .attr('required', '')
-
-  form.append('button').attr('type', 'submit').append('a').attr('class', 'button').text('Build my radar')
-
-  form.append('p').html("<a href='https://www.thoughtworks.com/radar/byor#guide'>Need help?</a>")
 }
 
 function plotErrorMessage(exception, fileType) {

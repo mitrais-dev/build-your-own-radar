@@ -154,7 +154,8 @@ const XLSXDocument = function (paramId, sheetName) {
             var workbook = X.read(event.target.result, { type: 'array' });
             var roa = X.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false }) || {};
             var blips = _.map(roa, new InputSanitizer().sanitize);
-            plotRadarGraph('title', blips, sheetName, Object.keys(workbook.Sheets));
+            const title = 'Mitrais Radar'
+            plotRadarGraph(sheetName ?? title, blips, sheetName, Object.keys(workbook.Sheets));
           } catch (exception) {
             plotErrorMessage(exception);
           }
@@ -269,7 +270,7 @@ const Factory = function () {
 
     const paramId = getDocumentOrSheetId();
     const sheetName = getSheetName()
-      console.log(paramId, sheetName);
+
     sheet = XLSXDocument(paramId, sheetName)
     sheet.init().build()
     // if (paramId && paramId.endsWith('.csv')) {
@@ -286,20 +287,20 @@ const Factory = function () {
     //   if (!featureToggles.UIRefresh2022) {
     //     document.body.style.opacity = '1'
     //     document.body.innerHTML = ''
-    //     const content = d3.select('body').append('div').attr('class', 'input-sheet')
+        // const content = d3.select('body').append('div').attr('class', 'input-sheet')
     //     plotLogo(content)
-    //     const bannerText =
-    //       '<div><h1>Build your own radar</h1><p>Once you\'ve <a href ="https://www.thoughtworks.com/radar/byor">created your Radar</a>, you can use this service' +
-    //       ' to generate an <br />interactive version of your Technology Radar. Not sure how? <a href ="https://www.thoughtworks.com/radar/byor">Read this first.</a></p></div>'
+        // const bannerText =
+        //   '<div><h1>Build your own radar</h1><p>Once you\'ve <a href ="https://www.thoughtworks.com/radar/byor">created your Radar</a>, you can use this service' +
+        //   ' to generate an <br />interactive version of your Technology Radar. Not sure how? <a href ="https://www.thoughtworks.com/radar/byor">Read this first.</a></p></div>'
 
-    //     plotBanner(content, bannerText)
+        // plotBanner(content, bannerText)
 
     //     plotForm(content)
 
     //     plotFooter(content)
     //   }
 
-      setDocumentTitle()
+      // setDocumentTitle()
     // }
   }
 

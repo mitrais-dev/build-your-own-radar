@@ -13,8 +13,9 @@ const { graphConfig, getGraphSize } = require('./config')
 const { renderBanner } = require('./components/banner')
 const { renderQuadrantSubnav } = require('./components/quadrantSubnav')
 const { renderSearch } = require('./components/search')
-const { renderAlternativeRadars } = require('./components/alternativeRadars')
-const { renderButtons } = require('./components/buttons')
+// const { renderAlternativeRadars } = require('./components/alternativeRadars')
+// const { renderButtons } = require('./components/buttons')
+const { renderFloatingActionButton } = require('./components/floatingAction')
 const {
   renderRadarQuadrants,
   renderMobileView,
@@ -771,16 +772,17 @@ const Radar = function (size, radar) {
     currentSheet = radar.getCurrentSheet()
 
     const radarHeader = d3.select('main .graph-header')
-    const radarFooter = d3.select('main .graph-footer')
+    // const radarFooter = d3.select('main .graph-footer')
 
     renderBanner(renderFullRadar)
 
     if (featureToggles.UIRefresh2022) {
+      renderFloatingActionButton(alternatives, currentSheet)
       renderQuadrantSubnav(radarHeader, quadrants, renderFullRadar)
       renderSearch(radarHeader, quadrants)
-      renderAlternativeRadars(radarFooter, alternatives, currentSheet)
+      // renderAlternativeRadars(radarFooter, alternatives, currentSheet)
       renderQuadrantTables(quadrants, rings)
-      renderButtons(radarFooter)
+      // renderButtons(radarFooter) // Commented out for now becuase renderFloatingActionButton being used
 
       const landingPageElements = document.querySelectorAll('main .home-page')
       landingPageElements.forEach((elem) => {

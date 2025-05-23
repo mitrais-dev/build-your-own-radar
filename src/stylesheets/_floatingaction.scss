@@ -1,0 +1,140 @@
+@import 'colors';
+@import 'layout';
+
+@if $UIRefresh2022 {
+  .floating-buttons {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 1000;
+  }
+
+  .floating-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: $grey-light;
+    color: $white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    font-size: 20px;
+
+    &:hover {
+      background-color: $grey;
+    }
+
+    &:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+  }
+
+  .tooltip {
+    visibility: hidden;
+    width: max-content;
+    background-color: $wave;
+    color: $white;
+    text-align: center;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+    right: 110%;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    white-space: nowrap;
+    padding: 4px 8px;
+    line-height: 30px;
+
+    /* Fade in tooltip - takes 1 second to go from 0% to 100% opac: */
+    opacity: 0;
+    transition: opacity 1s;
+
+    &::after {
+      content: ' ';
+      position: absolute;
+      top: 50%;
+      left: 100%; /* To the right of the tooltip */
+      margin-top: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: transparent transparent transparent $black;
+    }
+  }
+
+  .archive-panel {
+    position: fixed;
+    right: 80px;
+    bottom: 20px;
+    width: 260px;
+    height: 150px;
+    background: $grey-lightest;
+    box-shadow: 0 2px 8px $grey-light;
+    overflow-y: auto;
+    border-radius: 8px;
+    display: none;
+    flex-direction: column;
+    padding: 12px;
+    z-index: 10;
+  }
+
+  .archive-item {
+    padding: 8px;
+    border-bottom: 1px solid $grey-light;
+
+    &:hover {
+      background-color: $grey-light;
+      cursor: pointer;
+    }
+
+    &__tooltip {
+      visibility: hidden;
+      width: max-content;
+      background-color: $wave;
+      color: $white;
+      text-align: center;
+      border-radius: 6px;
+      position: absolute;
+      left: 40%;
+      transform: translateY(-80%);
+      font-size: 14px;
+      white-space: nowrap;
+      padding: 4px 8px;
+      line-height: 30px;
+
+      /* Fade in tooltip - takes 1 second to go from 0% to 100% opac: */
+      opacity: 0;
+      transition: opacity 1s;
+
+      &::after {
+        content: ' ';
+        position: absolute;
+        top: 50%;
+        right: 100%; /* To the left of the tooltip */
+        margin-top: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: transparent $black transparent transparent;
+      }
+    }
+
+    &:hover .archive-item__tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+  }
+
+  #loader {
+    text-align: center;
+    padding: 10px;
+    font-size: 12px;
+    color: $grey-dark;
+  }
+}

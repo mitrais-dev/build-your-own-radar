@@ -2,44 +2,10 @@
 @import 'layout';
 
 @if $UIRefresh2022 {
-  .floating-buttons {
-    position: fixed;
-    right: 20px;
-    bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    z-index: 1000;
-  }
-
-  .floating-button {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background-color: $grey-light;
-    color: $white;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    position: relative;
-    font-size: 20px;
-
-    &:hover {
-      background-color: $grey;
-    }
-
-    &:hover .tooltip {
-      visibility: visible;
-      opacity: 1;
-    }
-  }
-
   .tooltip {
     visibility: hidden;
     width: max-content;
-    background-color: $wave;
+    background-color: $flamingo;
     color: $white;
     text-align: center;
     border-radius: 6px;
@@ -48,9 +14,9 @@
     right: 110%;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 16px;
+    font-size: 12px;
     white-space: nowrap;
-    padding: 4px 8px;
+    padding: 2px 4px;
     line-height: 30px;
 
     /* Fade in tooltip - takes 1 second to go from 0% to 100% opac: */
@@ -65,7 +31,7 @@
       margin-top: -5px;
       border-width: 5px;
       border-style: solid;
-      border-color: transparent transparent transparent $black;
+      border-color: transparent transparent transparent $flamingo;
     }
   }
 
@@ -97,7 +63,7 @@
     &__tooltip {
       visibility: hidden;
       width: max-content;
-      background-color: $wave;
+      background-color: $flamingo;
       color: $white;
       text-align: center;
       border-radius: 6px;
@@ -136,5 +102,108 @@
     padding: 10px;
     font-size: 12px;
     color: $grey-dark;
+  }
+
+  .fab-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    z-index: 1000;
+  }
+
+  .fab {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: $flamingo-dark;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 28px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background 0.3s,
+      transform 0.3s;
+
+    &:hover {
+      background-color: $flamingo;
+    }
+  }
+
+  .fab.open .fab-icon {
+    transform: rotate(45deg); /* Turn + into x */
+  }
+
+  .fab-icon {
+    display: inline-block;
+    transition: transform 0.3s;
+  }
+
+  .fab-actions {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+
+  .fab-action {
+    width: 56px;
+    height: 56px;
+    background-color: $flamingo-dark;
+    color: white;
+    border-radius: 50%;
+    margin-bottom: 10px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease;
+    white-space: nowrap;
+    pointer-events: none;
+    cursor: pointer;
+    border: none;
+
+    &:hover {
+      background-color: $flamingo;
+    }
+
+    &:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
+      transition: opacity 0.3s;
+    }
+  }
+
+  .fab-action.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  @media (min-width: 1280px) {
+    .fab-container {
+      flex-direction: column-reverse;
+    }
+
+    .fab-actions {
+      display: flex !important;
+    }
+
+    .fab-action {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .fab {
+      display: none;
+    }
   }
 }

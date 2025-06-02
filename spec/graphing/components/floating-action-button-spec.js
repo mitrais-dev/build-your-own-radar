@@ -15,20 +15,23 @@ describe('Floating Actions', function () {
     renderFloatingActionButton(['1', '2'], '1')
 
     // Test buttons container
-    const buttonsContainer = document.querySelector('.floating-buttons')
+    const buttonsContainer = document.querySelector('.fab-container')
     expect(buttonsContainer).not.toBeNull()
 
     // Test print button
     const printBtn = document.getElementById('printBtn')
     expect(printBtn).not.toBeNull()
     expect(printBtn.querySelector('img')).not.toBeNull()
-    expect(printBtn.querySelector('.tooltip')?.textContent).toBe('Print This Radar')
+    expect(printBtn.querySelector('.fab-action__tooltip')?.textContent).toBe('Print This Radar')
 
     // Test archive button
     const archiveBtn = document.getElementById('archiveBtn')
     expect(archiveBtn).not.toBeNull()
     expect(archiveBtn.querySelector('img')).not.toBeNull()
-    expect(archiveBtn.querySelector('.tooltip')?.textContent).toBe('Archive')
+    expect(archiveBtn.querySelector('.fab-action__tooltip')?.textContent).toBe('Archive')
+
+    const backToLatestBtn = document.getElementById('backToLatestBtn')
+    expect(backToLatestBtn).toBeNull()
 
     // Test archive panel
     const archivePanel = document.getElementById('archivePanel')
@@ -39,5 +42,12 @@ describe('Floating Actions', function () {
     const loader = document.getElementById('loader')
     expect(loader).not.toBeNull()
     expect(loader.textContent).toBe('Loading more...')
+  })
+
+  it('should render back to latest button because current sheet is not the latest', () => {
+    renderFloatingActionButton(['1', '2'], '2')
+
+    const backToLatestBtn = document.getElementById('backToLatestBtn')
+    expect(backToLatestBtn).not.toBeNull()
   })
 })

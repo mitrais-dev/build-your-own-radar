@@ -1,40 +1,53 @@
 @import 'colors';
 @import 'layout';
 
-@if $UIRefresh2022 {
-  .tooltip {
-    visibility: hidden;
-    width: max-content;
-    background-color: $flamingo;
-    color: $white;
-    text-align: center;
-    border-radius: 6px;
-    position: absolute;
-    z-index: 1;
-    right: 110%;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 12px;
-    white-space: nowrap;
-    padding: 2px 4px;
-    line-height: 30px;
+@mixin tooltip($property: right, $value: 110%) {
+  visibility: hidden;
+  width: max-content;
+  background-color: $purple;
+  color: $white;
+  text-align: center;
+  border-radius: 6px;
+  position: absolute;
+  z-index: 1;
+  #{$property}: $value;
+  font-size: 14px;
+  white-space: nowrap;
+  padding: 2px 4px;
+  line-height: 30px;
 
-    /* Fade in tooltip - takes 1 second to go from 0% to 100% opac: */
-    opacity: 0;
-    transition: opacity 1s;
-
-    &::after {
-      content: ' ';
-      position: absolute;
-      top: 50%;
-      left: 100%; /* To the right of the tooltip */
-      margin-top: -5px;
-      border-width: 5px;
-      border-style: solid;
-      border-color: transparent transparent transparent $flamingo;
-    }
+  @if $property == left {
+    transform: translateY(-80%);
   }
 
+  /* Fade in tooltip - takes 1 second to go from 0% to 100% opac: */
+  opacity: 0;
+  transition: opacity 1s;
+
+  &::after {
+    content: ' ';
+    position: absolute;
+    top: 50%;
+    margin-top: -5px;
+    border-width: 5px;
+    border-style: solid;
+
+    @if $property == right {
+      left: 100%;
+      border-color: transparent transparent transparent $purple;
+    } @else {
+      right: 100%;
+      border-color: transparent $purple transparent transparent;
+    }
+  }
+}
+
+%fab-bg-color {
+  background: $purple-lighter;
+  background: radial-gradient(circle, $purple-lighter 0%, $purple-light 50%, $purple 100%);
+}
+
+@if $UIRefresh2022 {
   .archive-panel {
     position: fixed;
     right: 80px;
@@ -61,39 +74,13 @@
     }
 
     &__tooltip {
-      visibility: hidden;
-      width: max-content;
-      background-color: $flamingo;
-      color: $white;
-      text-align: center;
-      border-radius: 6px;
-      position: absolute;
-      left: 40%;
-      transform: translateY(-80%);
-      font-size: 14px;
-      white-space: nowrap;
-      padding: 4px 8px;
-      line-height: 30px;
-
-      /* Fade in tooltip - takes 1 second to go from 0% to 100% opac: */
-      opacity: 0;
-      transition: opacity 1s;
-
-      &::after {
-        content: ' ';
-        position: absolute;
-        top: 50%;
-        right: 100%; /* To the left of the tooltip */
-        margin-top: -5px;
-        border-width: 5px;
-        border-style: solid;
-        border-color: transparent $black transparent transparent;
-      }
+      @include tooltip(left, 50%);
     }
 
     &:hover .archive-item__tooltip {
       visibility: visible;
       opacity: 1;
+      transition: opacity 0.3s;
     }
   }
 
@@ -115,15 +102,14 @@
   }
 
   .fab {
-    width: 56px;
-    height: 56px;
+    width: 65px;
+    height: 65px;
     border-radius: 50%;
-    background-color: $flamingo-dark;
-    color: white;
+    @extend %fab-bg-color;
     border: none;
     cursor: pointer;
-    font-size: 28px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    font-size: 40px;
+    box-shadow: 0 4px 8px $grey-darkest;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -132,7 +118,17 @@
       transform 0.3s;
 
     &:hover {
-      background-color: $flamingo;
+      background-color: $purple-light;
+    }
+
+    &__tooltip {
+      @include tooltip();
+    }
+
+    &:hover .fab__tooltip {
+      visibility: visible;
+      opacity: 1;
+      transition: opacity 0.3s;
     }
   }
 
@@ -154,9 +150,9 @@
   }
 
   .fab-action {
-    width: 56px;
-    height: 56px;
-    background-color: $flamingo-dark;
+    height: 65px;
+    width: 65px;
+    @extend %fab-bg-color;
     color: white;
     border-radius: 50%;
     margin-bottom: 10px;
@@ -171,20 +167,31 @@
     border: none;
 
     &:hover {
-      background-color: $flamingo;
+      background-color: $purple-light;
     }
 
-    &:hover .tooltip {
+    &:hover .fab-action__tooltip {
       visibility: visible;
       opacity: 1;
       transition: opacity 0.3s;
     }
-  }
 
-  .fab-action.show {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
+    &__tooltip {
+      @include tooltip();
+      transform: translateY(9px);
+    }
+
+    &.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    img {
+      width: 50px;
+      display: block;
+      margin: auto;
+    }
   }
 
   @media (min-width: 1280px) {

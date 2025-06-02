@@ -7,13 +7,12 @@ const createButton = (iconSrc, tooltipText, id, ms) => {
   btn.style.transitionDelay = ms
 
   const tooltip = document.createElement('div')
-  tooltip.className = 'tooltip'
+  tooltip.className = 'fab-action__tooltip'
   tooltip.textContent = tooltipText
 
   const image = document.createElement('img')
   image.src = iconSrc
   image.alt = tooltipText
-  image.style.width = '40px'
 
   btn.appendChild(tooltip)
   btn.appendChild(image)
@@ -35,9 +34,9 @@ function floatingActionButton(showBackToLatest) {
   const archiveBtnMs = showBackToLatest ? '0.3s' : '0.2s'
 
   // 3. Create the fab-action elements and append them to fab-actions
-  const backToLatestBtn = createButton('images/back.png', 'Back to Latest Radar', 'archiveBtn', '0.1s')
+  const backToLatestBtn = createButton('images/back.png', 'Back to Latest Radar', 'backToLatestBtn', '0.1s')
   const archiveBtn = createButton('images/archive.png', 'Archive', 'archiveBtn', archiveBtnMs)
-  const printBtn = createButton('images/print.png', 'Print This Radar', 'printBtn', printBtnMs)
+  const printBtn = createButton('images/printer.png', 'Print This Radar', 'printBtn', printBtnMs)
 
   if (showBackToLatest) {
     fabActions.appendChild(backToLatestBtn)
@@ -55,7 +54,13 @@ function floatingActionButton(showBackToLatest) {
   const fabIcon = document.createElement('span')
   fabIcon.classList.add('fab-icon')
   fabIcon.textContent = '+'
+
+  const fabTooltip = document.createElement('div')
+  fabTooltip.classList.add('fab__tooltip')
+  fabTooltip.textContent = 'Open'
+
   fabButton.appendChild(fabIcon)
+  fabButton.appendChild(fabTooltip)
 
   // Append actions and button to the container
   fabContainer.appendChild(fabActions)
@@ -71,12 +76,12 @@ function floatingActionButton(showBackToLatest) {
   }
 }
 
-function renderFloatingActionButton(alternatives, currentSheet) {
-  // --- FLOATING BUTTONS ---
-  const [latestSheet, ...rest] = alternatives
-  const showBackToLatest = currentSheet !== latestSheet
-
-  const { archiveBtn, backToLatestBtn, printBtn } = floatingActionButton(showBackToLatest)
+function arvhiveEventListener(archiveBtn, archiveItems) {
+  // --- FUNCTIONALITY ---
+  let isOpen = false
+  let itemCount = 0
+  const BATCH_SIZE = 5
+  const MAX_ITEMS = archiveItems.length
 
   // --- ARCHIVE PANEL ---
   const archivePanel = document.createElement('div')
@@ -94,12 +99,6 @@ function renderFloatingActionButton(alternatives, currentSheet) {
   archivePanel.appendChild(loader)
   document.body.appendChild(archivePanel)
 
-  // --- FUNCTIONALITY ---
-  let isOpen = false
-  let itemCount = 0
-  const BATCH_SIZE = 5
-  const MAX_ITEMS = rest.length
-
   const loadMoreItems = () => {
     if (itemCount >= MAX_ITEMS) {
       loader.textContent = 'No more items.'
@@ -112,8 +111,8 @@ function renderFloatingActionButton(alternatives, currentSheet) {
 
       const archiveLink = document.createElement('a')
       archiveLink.className = 'archive-item__link'
-      archiveLink.textContent = rest[itemCount]
-      archiveLink.href = constructSheetUrl(rest[itemCount])
+      archiveLink.textContent = archiveItems[itemCount]
+      archiveLink.href = constructSheetUrl(archiveItems[itemCount])
       archiveLink.setAttribute('role', 'tab')
       archiveLink.style.borderBottom = 'none'
 
@@ -149,22 +148,14 @@ function renderFloatingActionButton(alternatives, currentSheet) {
       archivePanel.style.display = 'none'
     }
   })
+}
 
-  printBtn.addEventListener('click', () => {
-    window.print()
-  })
-
-  backToLatestBtn.addEventListener('click', () => {
-    if (currentSheet !== latestSheet) {
-      window.location.href = '/'
-    }
-  })
-
+function fabEventListener() {
   const fab = document.getElementById('fab')
   const fabActions = document.getElementById('fabActions')
   const fabContainer = document.getElementById('fabContainer')
+  const fabTooltip = document.querySelector('.fab__tooltip')
 
-  // Toggle direction (right/left)
   const fabPosition = 'right'
   if (fabPosition === 'left') {
     fabContainer.style.left = '20px'
@@ -176,6 +167,7 @@ function renderFloatingActionButton(alternatives, currentSheet) {
 
   function toggleActions() {
     const isOpen = fab.classList.toggle('open')
+    fabTooltip.textContent = isOpen ? 'Close' : 'Open'
 
     actionElements.forEach((action, index) => {
       setTimeout(() => {
@@ -186,6 +178,7 @@ function renderFloatingActionButton(alternatives, currentSheet) {
 
   function closeActions() {
     fab.classList.remove('open')
+
     actionElements.forEach((action) => action.classList.remove('show'))
   }
 
@@ -197,6 +190,26 @@ function renderFloatingActionButton(alternatives, currentSheet) {
   document.addEventListener('click', (e) => {
     if (!fabContainer.contains(e.target)) {
       closeActions()
+    }
+  })
+}
+
+function renderFloatingActionButton(alternatives, currentSheet) {
+  const [latestSheet, ...rest] = alternatives
+  const showBackToLatest = currentSheet !== latestSheet
+  const { archiveBtn, backToLatestBtn, printBtn } = floatingActionButton(showBackToLatest)
+
+  arvhiveEventListener(archiveBtn, rest)
+
+  fabEventListener()
+
+  printBtn.addEventListener('click', () => {
+    window.print()
+  })
+
+  backToLatestBtn.addEventListener('click', () => {
+    if (showBackToLatest) {
+      window.location.href = '/'
     }
   })
 }

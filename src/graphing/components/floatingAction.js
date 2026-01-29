@@ -209,7 +209,9 @@ function renderFloatingActionButton(alternatives, currentSheet) {
 
   backToLatestBtn.addEventListener('click', () => {
     if (showBackToLatest) {
-      window.location.href = '/'
+      const raw = new URLSearchParams(window.location.search).get('documentId')
+
+      window.location.href = raw === null ? '/' : `/?documentId=${decodeURIComponent(raw)}`
     }
   })
 }

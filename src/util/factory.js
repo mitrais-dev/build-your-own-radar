@@ -22,6 +22,7 @@ const GoogleAuth = require('./googleAuth')
 const config = require('../config')
 const featureToggles = config().featureToggles
 const { getDocumentOrSheetId, getSheetName } = require('./urlUtils')
+const OneDriveUtil = require('./oneDriveUtil')
 const { getGraphSize, graphConfig, isValidConfig } = require('../graphing/config')
 const InvalidConfigError = require('../exceptions/invalidConfigError')
 
@@ -81,8 +82,8 @@ const plotRadar = function (title, blips, currentRadarName, alternativeRadars) {
   const size = featureToggles.UIRefresh2022
     ? getGraphSize()
     : window.innerHeight - 133 < 620
-      ? 620
-      : window.innerHeight - 133
+    ? 620
+    : window.innerHeight - 133
   new GraphingRadar(size, radar).init().plot()
 }
 
@@ -168,6 +169,45 @@ const XLSXDocument = function (paramId, sheetName) {
         fileReader.readAsArrayBuffer(blob)
       })
       .catch((exception) => plotErrorMessage(exception))
+  }
+
+  self.init = function () {
+    plotLoading()
+    return self
+  }
+
+  return self
+}
+
+const OneDriveDocument = function (oneDriveUrl, sheetName) {
+  var self = {}
+  const oneDriveUtil = new OneDriveUtil()
+
+  self.build = function () {
+    if (!oneDriveUtil.isValidOneDriveUrl(oneDriveUrl)) {
+      plotErrorMessage(new Error('Invalid OneDrive URL format'), 'onedrive')
+      return
+    }
+
+    oneDriveUtil
+      .fetchExcelFile(oneDriveUrl)
+      .then((arrayBuffer) => {
+        try {
+          var workbook = X.read(arrayBuffer, { type: 'array' })
+          var currentSheetName = sheetName
+          if (!sheetName) {
+            currentSheetName = workbook.SheetNames[0]
+          }
+
+          var roa = X.utils.sheet_to_json(workbook.Sheets[currentSheetName], { raw: false }) || {}
+          var blips = _.map(roa, new InputSanitizer().sanitize)
+          const title = 'OneDrive Radar - ' + currentSheetName
+          plotRadarGraph(title, blips, currentSheetName, Object.keys(workbook.Sheets))
+        } catch (exception) {
+          plotErrorMessage(exception, 'onedrive')
+        }
+      })
+      .catch((exception) => plotErrorMessage(exception, 'onedrive'))
   }
 
   self.init = function () {
@@ -274,8 +314,15 @@ const Factory = function () {
     const paramId = getDocumentOrSheetId()
     const sheetName = getSheetName()
 
-    sheet = XLSXDocument(paramId, sheetName)
-    sheet.init().build()
+    // Check if paramId is OneDrive URL
+    const oneDriveUtil = new OneDriveUtil()
+    if (oneDriveUtil.isValidOneDriveUrl(paramId)) {
+      sheet = OneDriveDocument(paramId, sheetName)
+      sheet.init().build()
+    } else {
+      sheet = XLSXDocument(paramId, sheetName)
+      sheet.init().build()
+    }
     // if (paramId && paramId.endsWith('.csv')) {
     //   sheet = CSVDocument(paramId)
     //   sheet.init().build()

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "buildd": "webpack serve --mode development --config webpack.dev.js",
+    "build-serve": "webpack serve --mode development --config webpack.dev.js",
     "backend": "node src/backend.js",
     "build:dev": "webpack --mode development --config webpack.dev.js",
     "build:prod": "webpack --mode production --config webpack.prod.js",

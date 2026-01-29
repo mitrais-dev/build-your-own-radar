@@ -37,7 +37,6 @@ const OneDriveUtil = function () {
       return 'https://api.onedrive.com/v1.0/drives/me/items/' + resIdMatch[1] + '/content'
     }
 
-    console.log('oneDriveUrl --------------------------------------> ', oneDriveUrl)
     // If it's a direct sharing link format
     const rIdMatch = oneDriveUrl.match(/[?&]rId=([^&]+)/i)
     if (rIdMatch) {

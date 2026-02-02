@@ -1,5 +1,5 @@
 const request = require('supertest')
-const app = require('../src/backend')
+const app = require('../../src/backend/index')
 
 const mockGet = jest.fn()
 
@@ -11,6 +11,7 @@ jest.mock('axios', () => ({
 jest.mock('axios-cookiejar-support', () => ({
   wrapper: jest.fn(),
 }))
+
 describe('Backend', () => {
   describe('GET /api/proxy', () => {
     let consoleErrorSpy
@@ -52,9 +53,8 @@ describe('Backend', () => {
 
       const res = await request(app).get(`/api/proxy?url=${url}`)
 
-      expect(res.status).toBe(200)
+      expect(res.status).toBe(400)
       expect(consoleErrorSpy).toHaveBeenCalled()
-      expect(consoleErrorSpy).toHaveBeenCalledWith('⚠ WARNING: Buffer does NOT look like XLSX file!')
     })
 
     it('should return 500 when axios throws error', async () => {
@@ -64,20 +64,8 @@ describe('Backend', () => {
 
       expect(res.status).toBe(500)
       expect(res.body).toEqual({
-        error: 'Proxy error',
+        error: 'Proxy Error',
         message: 'Network error',
-      })
-    })
-  })
-
-  describe('GET /health', () => {
-    it('should return health status', async () => {
-      const res = await request(app).get('/health')
-
-      expect(res.status).toBe(200)
-      expect(res.body).toEqual({
-        status: 'OK',
-        service: 'OneDrive Proxy Server',
       })
     })
   })

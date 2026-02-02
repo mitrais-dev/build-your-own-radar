@@ -3,7 +3,10 @@ set -e
 
 cd /src/build-your-own-radar
 
-echo "Starting webpack build..."
+echo "Starting webpack build with env:"
+echo "  BACKEND_URL=${BACKEND_URL}"
+echo "  ALLOW_PUBLIC_URLS=${ALLOW_PUBLIC_URLS}"
+echo "  RADAR_DATA_URL=${RADAR_DATA_URL}"
 npm run build:prod
 
 echo "Copying built files to nginx directories..."

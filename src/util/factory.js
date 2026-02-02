@@ -23,6 +23,7 @@ const config = require('../config')
 const featureToggles = config().featureToggles
 const { getDocumentOrSheetId, getSheetName } = require('./urlUtils')
 const OneDriveUtil = require('./oneDriveUtil')
+const GoogleSheetsUtil = require('./googleSheetsUtil')
 const { getGraphSize, graphConfig, isValidConfig } = require('../graphing/config')
 const InvalidConfigError = require('../exceptions/invalidConfigError')
 
@@ -218,6 +219,45 @@ const OneDriveDocument = function (oneDriveUrl, sheetName) {
   return self
 }
 
+const GoogleSheetsDocument = function (sheetsUrl, sheetName) {
+  var self = {}
+  const googleSheetsUtil = new GoogleSheetsUtil()
+
+  self.build = function () {
+    if (!googleSheetsUtil.isValidGoogleSheetsUrl(sheetsUrl)) {
+      plotErrorMessage(new Error('Invalid Google Sheets URL format'), 'google-sheets')
+      return
+    }
+
+    googleSheetsUtil
+      .fetchExcelFile(sheetsUrl)
+      .then((arrayBuffer) => {
+        try {
+          var workbook = X.read(arrayBuffer, { type: 'array' })
+          var currentSheetName = sheetName
+          if (!currentSheetName) {
+            currentSheetName = workbook.SheetNames[0]
+          }
+
+          var roa = X.utils.sheet_to_json(workbook.Sheets[currentSheetName], { raw: false }) || {}
+          var blips = _.map(roa, new InputSanitizer().sanitize)
+          const title = 'Google Sheets Radar - ' + currentSheetName
+          plotRadarGraph(title, blips, currentSheetName, Object.keys(workbook.Sheets))
+        } catch (exception) {
+          plotErrorMessage(exception, 'google-sheets')
+        }
+      })
+      .catch((exception) => plotErrorMessage(exception, 'google-sheets'))
+  }
+
+  self.init = function () {
+    plotLoading()
+    return self
+  }
+
+  return self
+}
+
 const GoogleSheet = function (sheetReference, sheetName) {
   var self = {}
 
@@ -311,13 +351,37 @@ const Factory = function () {
       }
     })
 
-    const paramId = getDocumentOrSheetId()
+    // Check if public URLs are allowed from query params
+    const allowPublicUrls = process.env.ALLOW_PUBLIC_URLS === 'true'
+    const defaultRadarUrl = process.env.RADAR_DATA_URL
+
+    let paramId = getDocumentOrSheetId()
     const sheetName = getSheetName()
+
+    // If public URLs are not allowed, use the default radar URL
+    if (!allowPublicUrls) {
+      if (defaultRadarUrl) {
+        paramId = defaultRadarUrl
+        console.log('Using configured RADAR_DATA_URL:', paramId)
+      } else {
+        plotErrorMessage(new Error('RADAR_DATA_URL is not configured and public URLs are disabled'), 'configuration')
+        return
+      }
+    }
+
+    // If no paramId from query and default URL exists, use default
+    if (!paramId && defaultRadarUrl) {
+      paramId = defaultRadarUrl
+      console.log('No URL in query params, using default RADAR_DATA_URL:', paramId)
+    }
 
     // Check if paramId is OneDrive URL
     const oneDriveUtil = new OneDriveUtil()
     if (oneDriveUtil.isValidOneDriveUrl(paramId)) {
       sheet = OneDriveDocument(paramId, sheetName)
+      sheet.init().build()
+    } else if (new GoogleSheetsUtil().isValidGoogleSheetsUrl(paramId)) {
+      sheet = GoogleSheetsDocument(paramId, sheetName)
       sheet.init().build()
     } else {
       sheet = XLSXDocument(paramId, sheetName)

@@ -7,13 +7,13 @@ const args = require('yargs').argv
 
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const CopyPlugin = require('copy-webpack-plugin');
-
+const CopyPlugin = require('copy-webpack-plugin')
 
 const env = args.envFile
 if (env) {
-  // Load env file
   require('dotenv').config({ path: env })
+} else {
+  require('dotenv').config()
 }
 
 const common = ['./src/common.js']
@@ -35,6 +35,9 @@ const plugins = [
     'process.env.RINGS': JSON.stringify(process.env.RINGS),
     'process.env.QUADRANTS': JSON.stringify(process.env.QUADRANTS),
     'process.env.ADOBE_LAUNCH_SCRIPT_URL': JSON.stringify(process.env.ADOBE_LAUNCH_SCRIPT_URL),
+    'process.env.BACKEND_URL': JSON.stringify(process.env.BACKEND_URL),
+    'process.env.ALLOW_PUBLIC_URLS': JSON.stringify(process.env.ALLOW_PUBLIC_URLS),
+    'process.env.RADAR_DATA_URL': JSON.stringify(process.env.RADAR_DATA_URL),
   }),
   new CopyPlugin({
     patterns: [{ from: path.resolve(__dirname, 'src/data'), to: 'data' }],

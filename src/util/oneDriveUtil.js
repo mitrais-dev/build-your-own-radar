@@ -64,7 +64,8 @@ const OneDriveUtil = function () {
       // For SharePoint, use backend proxy
       let fetchUrl = directUrl
       if (oneDriveUrl.includes('sharepoint.com')) {
-        const proxyUrl = `http://localhost:3001/api/proxy?url=${encodeURIComponent(directUrl)}`
+        const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001'
+        const proxyUrl = `${backendUrl}/api/proxy?url=${encodeURIComponent(directUrl)}`
         console.log('Using proxy:', proxyUrl)
         fetchUrl = proxyUrl
       }

@@ -17,6 +17,13 @@ RUN npm ci
 
 COPY . ./
 
+# Environment variables with defaults
+ENV PORT=3001
+ENV NODE_ENV=production
+ENV BACKEND_URL=http://localhost:3001
+ENV ALLOW_PUBLIC_URLS=true
+ENV RADAR_DATA_URL="https://docs.google.com/spreadsheets/d/1lEo4nGMcbfcdw6PRIo59XCJhUplbIhqy"
+
 # Override parent node image's entrypoint script (/usr/local/bin/docker-entrypoint.sh),
 # which tries to run CMD as a node command
 ENTRYPOINT []

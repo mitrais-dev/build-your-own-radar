@@ -54,6 +54,7 @@ module.exports = {
     publicPath: ASSET_PATH,
     filename: '[name].[contenthash].js',
     assetModuleFilename: 'images/[name][ext]',
+    clean: true,
   },
   resolve: {
     extensions: ['.js', '.ts'],
@@ -66,7 +67,7 @@ module.exports = {
     rules: [
       {
         test: /\.xlsx$/,
-        use: 'file-loader', // or 'asset/resource' for Webpack 5+
+        type: 'asset/inline',
       },
       {
         test: /\.js$/,

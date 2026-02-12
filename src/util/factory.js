@@ -146,30 +146,48 @@ const plotRadarGraph = function (title, blips, currentRadarName, alternativeRada
 
 const XLSXDocument = function (paramId, sheetName) {
   var self = {}
-  self.build = function () {
-    fetch('/data/' + paramId, { mode: 'no-cors' })
-      .then((response) => response.blob()) // Convert response to Blob
-      .then((blob) => {
-        var fileReader = new FileReader()
-        fileReader.onload = function process(event) {
-          try {
-            var workbook = X.read(event.target.result, { type: 'array' })
-            var currentSheetName = sheetName
-            if (!sheetName) {
-              currentSheetName = workbook.SheetNames[0]
-            }
+  const radarDataRegistry = require('../data/index.js')
 
-            var roa = X.utils.sheet_to_json(workbook.Sheets[currentSheetName], { raw: false }) || {}
-            var blips = _.map(roa, new InputSanitizer().sanitize)
-            const title = 'Mitrais Radar'
-            plotRadarGraph(currentSheetName ?? title, blips, currentSheetName, Object.keys(workbook.Sheets))
-          } catch (exception) {
-            plotErrorMessage(exception)
-          }
-        }
-        fileReader.readAsArrayBuffer(blob)
-      })
-      .catch((exception) => plotErrorMessage(exception))
+  function decodeDataUriToArrayBuffer(dataUri) {
+    const base64Index = dataUri.indexOf('base64,')
+    if (base64Index === -1) {
+      throw new Error('Unsupported data URI format')
+    }
+    const base64 = dataUri.substring(base64Index + 7)
+    const binaryString = atob(base64)
+    const length = binaryString.length
+    const bytes = new Uint8Array(length)
+    for (let i = 0; i < length; i += 1) {
+      bytes[i] = binaryString.charCodeAt(i)
+    }
+    return bytes.buffer
+  }
+
+  self.build = function () {
+    const dataUri = radarDataRegistry[paramId]
+    if (!dataUri) {
+      plotErrorMessage(new Error('File not registered: ' + paramId))
+      return
+    }
+
+    try {
+      const arrayBuffer = decodeDataUriToArrayBuffer(dataUri)
+      if (arrayBuffer.byteLength === 0) {
+        plotErrorMessage(new Error('File is empty: ' + paramId))
+        return
+      }
+
+      var workbook = X.read(arrayBuffer, { type: 'array' })
+      var currentSheetName = sheetName || workbook.SheetNames[0]
+
+      var roa = X.utils.sheet_to_json(workbook.Sheets[currentSheetName], { raw: false }) || {}
+      var blips = _.map(roa, new InputSanitizer().sanitize)
+      const title = 'Mitrais Radar'
+      plotRadarGraph(currentSheetName ?? title, blips, currentSheetName, Object.keys(workbook.Sheets))
+    } catch (exception) {
+      console.error('Error loading XLSX:', exception)
+      plotErrorMessage(exception)
+    }
   }
 
   self.init = function () {
@@ -450,7 +468,7 @@ function plotLogo(content) {
   content
     .append('div')
     .attr('class', 'input-sheet__logo')
-    .html('<a href="https://www.thoughtworks.com"><img src="/images/tw-logo.png" alt="logo"/ ></a>')
+    .html('<a href="https://www.thoughtworks.com"><img src="./images/tw-logo.png" alt="logo"/ ></a>')
 }
 
 function plotFooter(content) {

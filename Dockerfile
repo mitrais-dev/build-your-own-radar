@@ -20,7 +20,7 @@ COPY . ./
 # Environment variables with defaults
 ENV PORT=3001
 ENV NODE_ENV=production
-ENV BACKEND_URL=http://localhost:3001
+ENV CORS_PROXY=allorigins
 ENV ALLOW_PUBLIC_URLS=true
 ENV RADAR_DATA_URL="https://docs.google.com/spreadsheets/d/1lEo4nGMcbfcdw6PRIo59XCJhUplbIhqy"
 

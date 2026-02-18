@@ -1,10 +1,14 @@
 /**
  * Utility to fetch files from Google Sheets
- * Converts Google Sheets URLs to download links (CSV format)
+ * Converts Google Sheets URLs to download links and uses CORS proxy
+ * Now fully frontend-only without backend dependency
  */
+
+const CORSProxy = require('./corsProxy')
 
 const GoogleSheetsUtil = function () {
   var self = {}
+  const corsProxy = new CORSProxy()
 
   /**
    * Extract spreadsheet ID from various Google Sheets URL formats
@@ -38,7 +42,8 @@ const GoogleSheetsUtil = function () {
 
   /**
    * Fetch XLSX file from Google Sheets
-   * Uses backend proxy to handle CORS and download the file
+   * Uses free CORS proxy to bypass CORS restrictions
+   * Fully frontend-only - no backend required
    * @param {string} sheetsUrl - Google Sheets URL or sheet ID
    * @returns {Promise<ArrayBuffer>}
    */
@@ -46,27 +51,19 @@ const GoogleSheetsUtil = function () {
     try {
       const xlsxUrl = self.convertToXlsxUrl(sheetsUrl)
 
-      console.log('Fetching Google Sheet XLSX from: ', xlsxUrl)
+      console.log('[GoogleSheets] Fetching XLSX from: ', xlsxUrl)
 
-      // Use backend proxy to download the file
-      const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001'
-      const proxyUrl = `${backendUrl}/api/google-sheets-file?url=${encodeURIComponent(xlsxUrl)}`
-      console.log('Using proxy:', proxyUrl)
+      // Use free CORS proxy directly - no backend needed
+      const response = await corsProxy.fetchThroughProxy(xlsxUrl)
 
-      const response = await fetch(proxyUrl)
-
-      console.log('Response status: ', response.status)
-
-      if (!response.ok) {
-        throw new Error(`Failed: ${response.status} ${response.statusText}`)
-      }
+      console.log('[GoogleSheets] Response status: ', response.status)
 
       const buffer = await response.arrayBuffer()
-      console.log('Got buffer, size: ', buffer.byteLength)
+      console.log('[GoogleSheets] Got buffer, size: ', buffer.byteLength)
 
       return buffer
     } catch (error) {
-      console.error('Fetch error:', error)
+      console.error('[GoogleSheets] Fetch error:', error)
       throw new Error(`Google Sheets fetch error: ${error.message}`)
     }
   }

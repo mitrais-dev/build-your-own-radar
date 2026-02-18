@@ -1,10 +1,14 @@
 /**
  * Utility to fetch files from OneDrive public links
  * Converts OneDrive sharing links to direct download links
+ * Now fully frontend-only using free CORS proxy
  */
+
+const CORSProxy = require('./corsProxy')
 
 const OneDriveUtil = function () {
   var self = {}
+  const corsProxy = new CORSProxy()
 
   /**
    * Convert OneDrive sharing link to direct download link
@@ -51,7 +55,7 @@ const OneDriveUtil = function () {
 
   /**
    * Fetch XLSX file from OneDrive and return array buffer
-   * For SharePoint URLs, uses server-side proxy to bypass CORS
+   * Uses free CORS proxy for all URLs - fully frontend-only
    * @param {string} oneDriveUrl - OneDrive sharing URL
    * @returns {Promise<ArrayBuffer>}
    */
@@ -59,32 +63,20 @@ const OneDriveUtil = function () {
     try {
       const directUrl = self.convertToDirectUrl(oneDriveUrl)
 
-      console.log('Fetching from: ', directUrl)
+      console.log('[OneDrive] Fetching from: ', directUrl)
 
-      // For SharePoint, use backend proxy
-      let fetchUrl = directUrl
-      if (oneDriveUrl.includes('sharepoint.com')) {
-        const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001'
-        const proxyUrl = `${backendUrl}/api/proxy?url=${encodeURIComponent(directUrl)}`
-        console.log('Using proxy:', proxyUrl)
-        fetchUrl = proxyUrl
-      }
+      // Use free CORS proxy directly - no backend needed anymore
+      const response = await corsProxy.fetchThroughProxy(directUrl)
 
-      const response = await fetch(fetchUrl)
-
-      console.log('Response status: ', response.status)
-
-      if (!response.ok) {
-        throw new Error(`Failed: ${response.status} ${response.statusText}`)
-      }
+      console.log('[OneDrive] Response status: ', response.status)
 
       const buffer = await response.arrayBuffer()
-      console.log('Got buffer, size: ', buffer.byteLength)
+      console.log('[OneDrive] Got buffer, size: ', buffer.byteLength)
 
       // Debug: check first bytes (should start with PK for XLSX)
       const firstBytes = new Uint8Array(buffer).slice(0, 4)
       console.log(
-        'First bytes:',
+        '[OneDrive] First bytes:',
         Array.from(firstBytes)
           .map((b) => b.toString(16))
           .join(' '),
@@ -92,7 +84,7 @@ const OneDriveUtil = function () {
 
       return buffer
     } catch (error) {
-      console.error('Fetch error:', error)
+      console.error('[OneDrive] Fetch error:', error)
       throw new Error(`OneDrive fetch error: ${error.message}`)
     }
   }

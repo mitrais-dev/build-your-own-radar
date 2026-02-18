@@ -64,6 +64,8 @@ describe('OneDriveUtil', () => {
   })
 
   describe('fetchExcelFile', () => {
+    const allOriginsBaseUrl = 'api.allorigins.win/raw?url='
+
     it('should fetch excel file successfully', async () => {
       const fakeBuffer = new ArrayBuffer(8)
       global.fetch.mockResolvedValueOnce({
@@ -88,7 +90,7 @@ describe('OneDriveUtil', () => {
 
       await util.fetchExcelFile('https://company.sharepoint.com/file.xlsx')
 
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/api/proxy?url='))
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining(allOriginsBaseUrl), expect.any(Object))
     })
 
     it('should throw error when response not ok', async () => {

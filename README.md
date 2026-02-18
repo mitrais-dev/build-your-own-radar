@@ -6,6 +6,9 @@
 [![Prettier-Standard Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://github.com/sheerun/prettier-standard)
 [![AGPL License](https://badgen.net/github/license/thoughtworks/build-your-own-radar)](https://github.com/thoughtworks/build-your-own-radar)
 
+> **🎉 This is now a STATIC FRONTEND-ONLY application!** No backend server required.  
+> All CORS requests use a free public proxy. See [STATIC_FE_MIGRATION.md](STATIC_FE_MIGRATION.md) for details.
+
 A library that generates an interactive radar, inspired by [thoughtworks.com/radar](http://thoughtworks.com/radar).
 
 ## Demo

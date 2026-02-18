@@ -6,7 +6,8 @@ const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
 
   // Frontend configuration
-  BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:3001',
+  CORS_PROXY: process.env.CORS_PROXY || 'allorigins',
+  ALLOW_PUBLIC_URLS: process.env.ALLOW_PUBLIC_URLS || true,
 }
 
 module.exports = env

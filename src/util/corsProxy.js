@@ -42,8 +42,7 @@ const CORSProxy = function () {
    * @returns {string} Proxy base URL
    */
   self.getProxyUrl = function () {
-    const selectedProxy =
-      typeof process !== 'undefined' && process.env && process.env.CORS_PROXY ? process.env.CORS_PROXY : 'allorigins'
+    const selectedProxy = process.env.CORS_PROXY || 'allorigins'
     const proxy = PROXY_OPTIONS.find((p) => p.name === selectedProxy)
     return proxy ? proxy.url : PROXY_OPTIONS[0].url
   }

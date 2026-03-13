@@ -11,6 +11,7 @@ describe('OneDriveUtil', () => {
   })
 
   afterEach(() => {
+    delete process.env.USE_CORS_PROXY
     jest.restoreAllMocks()
   })
 
@@ -91,6 +92,23 @@ describe('OneDriveUtil', () => {
       await util.fetchExcelFile('https://company.sharepoint.com/file.xlsx')
 
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining(allOriginsBaseUrl), expect.any(Object))
+    })
+
+    it('should fetch directly when USE_CORS_PROXY=false', async () => {
+      process.env.USE_CORS_PROXY = 'false'
+      util = OneDriveUtil()
+
+      const fakeBuffer = new ArrayBuffer(8)
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        arrayBuffer: jest.fn().mockResolvedValue(fakeBuffer),
+      })
+
+      await util.fetchExcelFile('https://1drv.ms/x/s!ABC')
+
+      expect(fetch).toHaveBeenCalledWith('https://1drv.ms/x/s!ABC?download=1')
+      delete process.env.USE_CORS_PROXY
     })
 
     it('should throw error when response not ok', async () => {

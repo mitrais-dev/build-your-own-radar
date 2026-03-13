@@ -11,6 +11,7 @@ describe('GoogleSheetsUtil', () => {
   })
 
   afterEach(() => {
+    delete process.env.USE_CORS_PROXY
     jest.restoreAllMocks()
   })
 
@@ -96,6 +97,26 @@ describe('GoogleSheetsUtil', () => {
 
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining(allOriginsBaseUrl), expect.any(Object))
       expect(buffer).toBe(fakeBuffer)
+    })
+
+    it('should fetch directly when USE_CORS_PROXY=false', async () => {
+      process.env.USE_CORS_PROXY = 'false'
+      util = new GoogleSheetsUtil()
+
+      const fakeBuffer = new ArrayBuffer(8)
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        arrayBuffer: jest.fn().mockResolvedValue(fakeBuffer),
+      })
+
+      const id = '1lEo4nGMcbfcdw6PRIo59XCJhUplbIhqy'
+      const expectedDirectUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=xlsx`
+      const buffer = await util.fetchExcelFile(id)
+
+      expect(fetch).toHaveBeenCalledWith(expectedDirectUrl)
+      expect(buffer).toBe(fakeBuffer)
+      delete process.env.USE_CORS_PROXY
     })
 
     it('should throw error when response not ok', async () => {

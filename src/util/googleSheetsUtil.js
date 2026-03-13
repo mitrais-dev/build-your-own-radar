@@ -1,6 +1,7 @@
 /**
  * Utility to fetch files from Google Sheets
- * Converts Google Sheets URLs to download links and uses CORS proxy
+ * Converts Google Sheets URLs to download links
+ * CORS proxy usage can be toggled via USE_CORS_PROXY env
  * Now fully frontend-only without backend dependency
  */
 
@@ -9,6 +10,7 @@ const CORSProxy = require('./corsProxy')
 const GoogleSheetsUtil = function () {
   var self = {}
   const corsProxy = new CORSProxy()
+  const useCorsProxy = process.env.USE_CORS_PROXY !== 'false'
 
   /**
    * Extract spreadsheet ID from various Google Sheets URL formats
@@ -42,8 +44,7 @@ const GoogleSheetsUtil = function () {
 
   /**
    * Fetch XLSX file from Google Sheets
-   * Uses free CORS proxy to bypass CORS restrictions
-   * Fully frontend-only - no backend required
+   * Uses CORS proxy by default; can fetch directly when USE_CORS_PROXY=false
    * @param {string} sheetsUrl - Google Sheets URL or sheet ID
    * @returns {Promise<ArrayBuffer>}
    */
@@ -52,9 +53,9 @@ const GoogleSheetsUtil = function () {
       const xlsxUrl = self.convertToXlsxUrl(sheetsUrl)
 
       console.log('[GoogleSheets] Fetching XLSX from: ', xlsxUrl)
+      console.log('[GoogleSheets] Proxy enabled: ', useCorsProxy)
 
-      // Use free CORS proxy directly - no backend needed
-      const response = await corsProxy.fetchThroughProxy(xlsxUrl)
+      const response = useCorsProxy ? await corsProxy.fetchThroughProxy(xlsxUrl) : await fetch(xlsxUrl)
 
       console.log('[GoogleSheets] Response status: ', response.status)
 

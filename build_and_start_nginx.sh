@@ -4,6 +4,7 @@ set -e
 cd /src/build-your-own-radar
 
 echo "Starting webpack build with env:"
+echo "  USE_CORS_PROXY=${USE_CORS_PROXY}"
 echo "  CORS_PROXY=${CORS_PROXY}"
 echo "  ALLOW_PUBLIC_URLS=${ALLOW_PUBLIC_URLS}"
 echo "  RADAR_DATA_URL=${RADAR_DATA_URL}"

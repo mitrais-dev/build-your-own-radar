@@ -1,7 +1,7 @@
 /**
  * Utility to fetch files from OneDrive public links
  * Converts OneDrive sharing links to direct download links
- * Now fully frontend-only using free CORS proxy
+ * CORS proxy usage can be toggled via USE_CORS_PROXY env
  */
 
 const CORSProxy = require('./corsProxy')
@@ -9,6 +9,7 @@ const CORSProxy = require('./corsProxy')
 const OneDriveUtil = function () {
   var self = {}
   const corsProxy = new CORSProxy()
+  const useCorsProxy = process.env.USE_CORS_PROXY !== 'false'
 
   /**
    * Convert OneDrive sharing link to direct download link
@@ -55,7 +56,7 @@ const OneDriveUtil = function () {
 
   /**
    * Fetch XLSX file from OneDrive and return array buffer
-   * Uses free CORS proxy for all URLs - fully frontend-only
+   * Uses CORS proxy by default; can fetch directly when USE_CORS_PROXY=false
    * @param {string} oneDriveUrl - OneDrive sharing URL
    * @returns {Promise<ArrayBuffer>}
    */
@@ -64,9 +65,9 @@ const OneDriveUtil = function () {
       const directUrl = self.convertToDirectUrl(oneDriveUrl)
 
       console.log('[OneDrive] Fetching from: ', directUrl)
+      console.log('[OneDrive] Proxy enabled: ', useCorsProxy)
 
-      // Use free CORS proxy directly - no backend needed anymore
-      const response = await corsProxy.fetchThroughProxy(directUrl)
+      const response = useCorsProxy ? await corsProxy.fetchThroughProxy(directUrl) : await fetch(directUrl)
 
       console.log('[OneDrive] Response status: ', response.status)
 

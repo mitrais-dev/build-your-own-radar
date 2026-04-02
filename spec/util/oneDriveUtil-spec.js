@@ -39,6 +39,20 @@ describe('OneDriveUtil', () => {
       expect(() => util.convertToDirectUrl('https://google.com')).toThrow('Invalid OneDrive URL')
     })
 
+    it('should throw error for attacker-controlled lookalike onedrive host', () => {
+      expect(() => util.convertToDirectUrl('https://onedrive.live.com.evil.com/path')).toThrow('Invalid OneDrive URL')
+    })
+
+    it('should throw error for attacker-controlled lookalike short-link host', () => {
+      expect(() => util.convertToDirectUrl('https://1drv.ms.evil.com/x/s!ABC')).toThrow('Invalid OneDrive URL')
+    })
+
+    it('should throw error for attacker-controlled lookalike sharepoint host', () => {
+      expect(() => util.convertToDirectUrl('https://company.sharepoint.com.evil.com/file.xlsx')).toThrow(
+        'Invalid OneDrive URL',
+      )
+    })
+
     it('should convert full OneDrive URL with resid to api download url', () => {
       const url = 'https://onedrive.live.com/?resid=ABC123%21DEF456'
 
@@ -133,8 +147,24 @@ describe('OneDriveUtil', () => {
       expect(util.isValidOneDriveUrl('https://onedrive.live.com')).toBe(true)
     })
 
+    it('should return true for valid short onedrive url', () => {
+      expect(util.isValidOneDriveUrl('https://1drv.ms/x/s!ABC')).toBe(true)
+    })
+
+    it('should return true for valid sharepoint subdomain', () => {
+      expect(util.isValidOneDriveUrl('https://company.sharepoint.com/path/file.xlsx')).toBe(true)
+    })
+
     it('should return false for invalid url', () => {
       expect(util.isValidOneDriveUrl('https://google.com')).toBe(false)
+    })
+
+    it('should return false for attacker-controlled lookalike host', () => {
+      expect(util.isValidOneDriveUrl('https://onedrive.live.com.evil.com/path')).toBe(false)
+    })
+
+    it('should return false for malformed url', () => {
+      expect(util.isValidOneDriveUrl('not-a-url')).toBe(false)
     })
   })
 })

@@ -41,10 +41,10 @@ RADAR_DATA_URL=https://docs.google.com/spreadsheets/d/YOUR_ID_HERE
 
 ```
 Google Sheets:
-http://localhost:8080/?sheetId=SHEET_ID
+http://localhost:8080/?documentId=YOUR_GOOGLESHEETS_URL
 
 OneDrive:
-http://localhost:8080/?oneDriveUrl=YOUR_ONEDRIVE_URL
+http://localhost:8080/?documentId=YOUR_ONEDRIVE_URL
 ```
 
 ---

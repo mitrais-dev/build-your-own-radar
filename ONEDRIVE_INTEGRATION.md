@@ -46,7 +46,7 @@ http://localhost:8080/?documentId=https://1drv.ms/x/s!xxxxxxxxxx&sheetName=2023-
 
 - ✅ `https://1drv.ms/x/s!...` (Short OneDrive links)
 - ✅ `https://onedrive.live.com/...` (Full OneDrive URLs)
-- ✅ `https://.sharepoint.com/...` (SharePoint links)
+- ✅ `https://<tenant>.sharepoint.com/...` (SharePoint links)
 
 ### How It Works:
 

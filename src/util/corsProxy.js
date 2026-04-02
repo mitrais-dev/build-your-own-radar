@@ -86,12 +86,13 @@ const CORSProxy = function () {
         console.log(`[CORSProxy] Fetching through proxy: ${proxyUrl}`)
         console.log(`[CORSProxy] Target URL: ${targetUrl}`)
 
+        const headers = { ...(options.headers || {}) }
+        if (typeof window === 'undefined') {
+          headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
         const response = await fetch(finalUrl, {
           ...options,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            ...options.headers,
-          },
+          headers,
         })
 
         if (response.ok) {

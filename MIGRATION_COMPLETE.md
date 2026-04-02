@@ -106,9 +106,7 @@ npm run build:prod
 ### Example URLs to Test
 
 ```
-http://localhost:8080/?sheetId=1lEo4nGMcbfcdw6PRIo59XCJhUplbIhqy
-
-http://localhost:8080/?oneDriveUrl=[YOUR_ONEDRIVE_URL]
+http://localhost:8080/?documentId=[YOUR_ONEDRIVE_URL]
 ```
 
 ---

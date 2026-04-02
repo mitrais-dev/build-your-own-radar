@@ -59,6 +59,10 @@ const GoogleSheetsUtil = function () {
 
       console.log('[GoogleSheets] Response status: ', response.status)
 
+      if (!response.ok) {
+        throw new Error(`Failed to fetch XLSX: HTTP ${response.status} ${response.statusText}`)
+      }
+
       const buffer = await response.arrayBuffer()
       console.log('[GoogleSheets] Got buffer, size: ', buffer.byteLength)
 
@@ -75,7 +79,22 @@ const GoogleSheetsUtil = function () {
    * @returns {boolean}
    */
   self.isValidGoogleSheetsUrl = function (url) {
-    return url && (url.includes('docs.google.com/spreadsheets') || /^[a-zA-Z0-9-_]{20,}$/.test(url))
+    if (!url || typeof url !== 'string') {
+      return false
+    }
+
+    if (/^[a-zA-Z0-9-_]{20,}$/.test(url)) {
+      return true
+    }
+
+    try {
+      const parsedUrl = new URL(url)
+      const hostname = parsedUrl.hostname.toLowerCase()
+
+      return hostname === 'docs.google.com' && parsedUrl.pathname.startsWith('/spreadsheets/d/')
+    } catch (_error) {
+      return false
+    }
   }
 
   return self

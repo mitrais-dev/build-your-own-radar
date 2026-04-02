@@ -11,28 +11,57 @@ const OneDriveUtil = function () {
   const corsProxy = new CORSProxy()
   const useCorsProxy = process.env.USE_CORS_PROXY !== 'false'
 
+  const parseAndValidateOneDriveUrl = function (url) {
+    if (!url || typeof url !== 'string') {
+      return null
+    }
+
+    let parsedUrl
+
+    try {
+      parsedUrl = new URL(url)
+    } catch (_error) {
+      return null
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase()
+    const isSharePointHost = hostname === 'sharepoint.com' || hostname.endsWith('.sharepoint.com')
+    const isOneDriveLiveHost = hostname === 'onedrive.live.com'
+    const isOneDriveShortHost = hostname === '1drv.ms'
+
+    if (!isSharePointHost && !isOneDriveLiveHost && !isOneDriveShortHost) {
+      return null
+    }
+
+    return {
+      isSharePointHost,
+      isOneDriveShortHost,
+    }
+  }
+
   /**
    * Convert OneDrive sharing link to direct download link
    * @param {string} oneDriveUrl - OneDrive sharing URL
    * @returns {string} Direct download URL
    */
   self.convertToDirectUrl = function (oneDriveUrl) {
+    const parsed = parseAndValidateOneDriveUrl(oneDriveUrl)
+
+    if (!parsed) {
+      throw new Error('Invalid OneDrive URL')
+    }
+
+    const { isSharePointHost, isOneDriveShortHost } = parsed
+
     // For SharePoint sharing links, convert to download endpoint
-    if (oneDriveUrl.includes('sharepoint.com')) {
+    if (isSharePointHost) {
       let url = oneDriveUrl.replace(/\/$/, '')
 
       return url.includes('?') ? url + '&download=1' : url + '?download=1'
     }
 
-    // Check if it's a OneDrive URL
-    const isValidUrl = oneDriveUrl.includes('onedrive.live.com') || oneDriveUrl.includes('1drv.ms')
-
-    if (!isValidUrl) {
-      throw new Error('Invalid OneDrive URL')
-    }
-
     // Handle 1drv.ms short URLs
-    if (oneDriveUrl.includes('1drv.ms')) {
+    if (isOneDriveShortHost) {
       return oneDriveUrl.replace(/\/$/, '') + '?download=1'
     }
 
@@ -71,6 +100,10 @@ const OneDriveUtil = function () {
 
       console.log('[OneDrive] Response status: ', response.status)
 
+      if (!response.ok) {
+        throw new Error(`OneDrive HTTP error: ${response.status} ${response.statusText || ''}`.trim())
+      }
+
       const buffer = await response.arrayBuffer()
       console.log('[OneDrive] Got buffer, size: ', buffer.byteLength)
 
@@ -96,7 +129,7 @@ const OneDriveUtil = function () {
    * @returns {boolean}
    */
   self.isValidOneDriveUrl = function (url) {
-    return url && (url.includes('onedrive.live.com') || url.includes('1drv.ms') || url.includes('sharepoint.com'))
+    return Boolean(parseAndValidateOneDriveUrl(url))
   }
 
   return self

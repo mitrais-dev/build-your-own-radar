@@ -167,6 +167,21 @@ describe('GoogleSheetsUtil', () => {
       expect(util.isValidGoogleSheetsUrl(url)).toBe(false)
     })
 
+    it('should return false when docs.google.com/spreadsheets only appears in query string', () => {
+      const url = 'https://evil.com/?next=https://docs.google.com/spreadsheets/d/1lEo4nGMcbfcdw6PRIo59XCJhUplbIhqy/edit'
+      expect(util.isValidGoogleSheetsUrl(url)).toBe(false)
+    })
+
+    it('should return false for attacker-controlled lookalike hostname', () => {
+      const url = 'https://docs.google.com.evil.com/spreadsheets/d/1lEo4nGMcbfcdw6PRIo59XCJhUplbIhqy/edit'
+      expect(util.isValidGoogleSheetsUrl(url)).toBe(false)
+    })
+
+    it('should return false for docs.google.com with non-spreadsheet path', () => {
+      const url = 'https://docs.google.com/document/d/1lEo4nGMcbfcdw6PRIo59XCJhUplbIhqy/edit'
+      expect(util.isValidGoogleSheetsUrl(url)).toBe(false)
+    })
+
     it('should return false for short invalid ID (less than 20 chars)', () => {
       const id = 'short'
       expect(util.isValidGoogleSheetsUrl(id)).toBe(false)

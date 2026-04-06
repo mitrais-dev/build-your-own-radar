@@ -22,6 +22,8 @@ const GoogleAuth = require('./googleAuth')
 const config = require('../config')
 const featureToggles = config().featureToggles
 const { getDocumentOrSheetId, getSheetName } = require('./urlUtils')
+const OneDriveUtil = require('./oneDriveUtil')
+const GoogleSheetsUtil = require('./googleSheetsUtil')
 const { getGraphSize, graphConfig, isValidConfig } = require('../graphing/config')
 const InvalidConfigError = require('../exceptions/invalidConfigError')
 
@@ -81,8 +83,8 @@ const plotRadar = function (title, blips, currentRadarName, alternativeRadars) {
   const size = featureToggles.UIRefresh2022
     ? getGraphSize()
     : window.innerHeight - 133 < 620
-      ? 620
-      : window.innerHeight - 133
+    ? 620
+    : window.innerHeight - 133
   new GraphingRadar(size, radar).init().plot()
 }
 
@@ -144,30 +146,126 @@ const plotRadarGraph = function (title, blips, currentRadarName, alternativeRada
 
 const XLSXDocument = function (paramId, sheetName) {
   var self = {}
-  self.build = function () {
-    fetch('/data/' + paramId, { mode: 'no-cors' })
-      .then((response) => response.blob()) // Convert response to Blob
-      .then((blob) => {
-        var fileReader = new FileReader()
-        fileReader.onload = function process(event) {
-          try {
-            var workbook = X.read(event.target.result, { type: 'array' })
-            var currentSheetName = sheetName
-            if (!sheetName) {
-              currentSheetName = workbook.SheetNames[0]
-            }
+  const radarDataRegistry = require('../data/index.js')
 
-            var roa = X.utils.sheet_to_json(workbook.Sheets[currentSheetName], { raw: false }) || {}
-            var blips = _.map(roa, new InputSanitizer().sanitize)
-            const title = 'Mitrais Radar'
-            plotRadarGraph(currentSheetName ?? title, blips, currentSheetName, Object.keys(workbook.Sheets))
-          } catch (exception) {
-            plotErrorMessage(exception)
+  function decodeDataUriToArrayBuffer(dataUri) {
+    const base64Index = dataUri.indexOf('base64,')
+    if (base64Index === -1) {
+      throw new Error('Unsupported data URI format')
+    }
+    const base64 = dataUri.substring(base64Index + 7)
+    const binaryString = atob(base64)
+    const length = binaryString.length
+    const bytes = new Uint8Array(length)
+    for (let i = 0; i < length; i += 1) {
+      bytes[i] = binaryString.charCodeAt(i)
+    }
+    return bytes.buffer
+  }
+
+  self.build = function () {
+    const dataUri = radarDataRegistry[paramId]
+    if (!dataUri) {
+      plotErrorMessage(new Error('File not registered: ' + paramId))
+      return
+    }
+
+    try {
+      const arrayBuffer = decodeDataUriToArrayBuffer(dataUri)
+      if (arrayBuffer.byteLength === 0) {
+        plotErrorMessage(new Error('File is empty: ' + paramId))
+        return
+      }
+
+      var workbook = X.read(arrayBuffer, { type: 'array' })
+      var currentSheetName = sheetName || workbook.SheetNames[0]
+
+      var roa = X.utils.sheet_to_json(workbook.Sheets[currentSheetName], { raw: false }) || {}
+      var blips = _.map(roa, new InputSanitizer().sanitize)
+      const title = 'Mitrais Radar'
+      plotRadarGraph(currentSheetName ?? title, blips, currentSheetName, Object.keys(workbook.Sheets))
+    } catch (exception) {
+      console.error('Error loading XLSX:', exception)
+      plotErrorMessage(exception)
+    }
+  }
+
+  self.init = function () {
+    plotLoading()
+    return self
+  }
+
+  return self
+}
+
+const OneDriveDocument = function (oneDriveUrl, sheetName) {
+  var self = {}
+  const oneDriveUtil = new OneDriveUtil()
+
+  self.build = function () {
+    if (!oneDriveUtil.isValidOneDriveUrl(oneDriveUrl)) {
+      plotErrorMessage(new Error('Invalid OneDrive URL format'), 'onedrive')
+      return
+    }
+
+    oneDriveUtil
+      .fetchExcelFile(oneDriveUrl)
+      .then((arrayBuffer) => {
+        try {
+          var workbook = X.read(arrayBuffer, { type: 'array' })
+          var currentSheetName = sheetName
+          if (!sheetName) {
+            currentSheetName = workbook.SheetNames[0]
           }
+
+          var roa = X.utils.sheet_to_json(workbook.Sheets[currentSheetName], { raw: false }) || {}
+          var blips = _.map(roa, new InputSanitizer().sanitize)
+          const title = 'OneDrive Radar - ' + currentSheetName
+          plotRadarGraph(title, blips, currentSheetName, Object.keys(workbook.Sheets))
+        } catch (exception) {
+          plotErrorMessage(exception, 'onedrive')
         }
-        fileReader.readAsArrayBuffer(blob)
       })
-      .catch((exception) => plotErrorMessage(exception))
+      .catch((exception) => plotErrorMessage(exception, 'onedrive'))
+  }
+
+  self.init = function () {
+    plotLoading()
+    return self
+  }
+
+  return self
+}
+
+const GoogleSheetsDocument = function (sheetsUrl, sheetName) {
+  var self = {}
+  const googleSheetsUtil = new GoogleSheetsUtil()
+
+  self.build = function () {
+    if (!googleSheetsUtil.isValidGoogleSheetsUrl(sheetsUrl)) {
+      plotErrorMessage(new Error('Invalid Google Sheets URL format'), 'google-sheets')
+      return
+    }
+
+    googleSheetsUtil
+      .fetchExcelFile(sheetsUrl)
+      .then((arrayBuffer) => {
+        try {
+          var workbook = X.read(arrayBuffer, { type: 'array' })
+          var currentSheetName = sheetName
+          if (!currentSheetName) {
+            currentSheetName = workbook.SheetNames[0]
+          }
+
+          var roa = X.utils.sheet_to_json(workbook.Sheets[currentSheetName], { raw: false }) || {}
+          var blips = _.map(roa, new InputSanitizer().sanitize)
+          const title = 'Google Sheets Radar - ' + currentSheetName
+          plotRadarGraph(title, blips, currentSheetName, Object.keys(workbook.Sheets))
+        } catch (exception) {
+          plotErrorMessage(exception, 'google-sheets')
+        }
+      })
+      .catch((exception) => plotErrorMessage(exception, 'google-sheets'))
   }
 
   self.init = function () {
@@ -271,11 +369,42 @@ const Factory = function () {
       }
     })
 
-    const paramId = getDocumentOrSheetId()
+    // Check if public URLs are allowed from query params
+    const allowPublicUrls = process.env.ALLOW_PUBLIC_URLS === 'true'
+    const defaultRadarUrl = process.env.RADAR_DATA_URL
+
+    let paramId = getDocumentOrSheetId()
     const sheetName = getSheetName()
 
-    sheet = XLSXDocument(paramId, sheetName)
-    sheet.init().build()
+    // If public URLs are not allowed, use the default radar URL
+    if (!allowPublicUrls) {
+      if (defaultRadarUrl) {
+        paramId = defaultRadarUrl
+        console.log('Using configured RADAR_DATA_URL:', paramId)
+      } else {
+        plotErrorMessage(new Error('RADAR_DATA_URL is not configured and public URLs are disabled'), 'configuration')
+        return
+      }
+    }
+
+    // If no paramId from query and default URL exists, use default
+    if (!paramId && defaultRadarUrl) {
+      paramId = defaultRadarUrl
+      console.log('No URL in query params, using default RADAR_DATA_URL:', paramId)
+    }
+
+    // Check if paramId is OneDrive URL
+    const oneDriveUtil = new OneDriveUtil()
+    if (oneDriveUtil.isValidOneDriveUrl(paramId)) {
+      sheet = OneDriveDocument(paramId, sheetName)
+      sheet.init().build()
+    } else if (new GoogleSheetsUtil().isValidGoogleSheetsUrl(paramId)) {
+      sheet = GoogleSheetsDocument(paramId, sheetName)
+      sheet.init().build()
+    } else {
+      sheet = XLSXDocument(paramId, sheetName)
+      sheet.init().build()
+    }
     // if (paramId && paramId.endsWith('.csv')) {
     //   sheet = CSVDocument(paramId)
     //   sheet.init().build()
@@ -339,7 +468,7 @@ function plotLogo(content) {
   content
     .append('div')
     .attr('class', 'input-sheet__logo')
-    .html('<a href="https://www.thoughtworks.com"><img src="/images/tw-logo.png" alt="logo"/ ></a>')
+    .html('<a href="https://www.thoughtworks.com"><img src="./images/tw-logo.png" alt="logo"/ ></a>')
 }
 
 function plotFooter(content) {

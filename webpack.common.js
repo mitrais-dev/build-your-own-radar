@@ -39,6 +39,8 @@ const plugins = [
     'process.env.RADAR_DATA_URL': JSON.stringify(process.env.RADAR_DATA_URL),
     'process.env.USE_CORS_PROXY': JSON.stringify(process.env.USE_CORS_PROXY || 'true'),
     'process.env.CORS_PROXY': JSON.stringify(process.env.CORS_PROXY || 'allorigins'),
+    'process.env.CORS_PROXY_LOCAL_URL': JSON.stringify(process.env.CORS_PROXY_LOCAL_URL || 'http://localhost:8787/proxy?url='),
+    'process.env.SHEET_VALIDATE_URL': JSON.stringify(process.env.SHEET_VALIDATE_URL || 'https://docs.google.com/spreadsheets/d/'),
   }),
   new CopyPlugin({
     patterns: [{ from: path.resolve(__dirname, 'src/data'), to: 'data' }],

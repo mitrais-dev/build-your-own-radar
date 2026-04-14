@@ -10,6 +10,11 @@ const CORSProxy = function () {
   // Free CORS proxy endpoints
   const PROXY_OPTIONS = [
     {
+      name: 'local',
+      url: process.env.CORS_PROXY_LOCAL_URL || 'http://localhost:8787/proxy?url=',
+      description: 'Local express proxy',
+    },
+    {
       name: 'allorigins',
       url: 'https://api.allorigins.win/raw?url=',
       description: 'Reliable and fast',
@@ -44,7 +49,11 @@ const CORSProxy = function () {
   self.getProxyUrl = function () {
     const selectedProxy = process.env.CORS_PROXY || 'allorigins'
     const proxy = PROXY_OPTIONS.find((p) => p.name === selectedProxy)
-    return proxy ? proxy.url : PROXY_OPTIONS[0].url
+    if (proxy) {
+      return proxy.url
+    }
+    const fallback = PROXY_OPTIONS.find((p) => p.name === 'allorigins')
+    return fallback ? fallback.url : PROXY_OPTIONS[0].url
   }
 
   function getProxyCandidates() {

@@ -344,6 +344,12 @@ const GoogleSheet = function (sheetReference, sheetName) {
   return self
 }
 
+const DomainName = function (url) {
+  var search = /.+:\/\/([^\\/]+)/
+  var match = search.exec(decodeURIComponent(url.replace(/\+/g, ' ')))
+  return match == null ? null : match[1]
+}
+
 const Factory = function () {
   var self = {}
   var sheet
@@ -393,13 +399,10 @@ const Factory = function () {
       console.log('No URL in query params, using default RADAR_DATA_URL:', paramId)
     }
 
-    // Check if paramId is OneDrive URL
-    const oneDriveUtil = new OneDriveUtil()
-    if (oneDriveUtil.isValidOneDriveUrl(paramId)) {
-      sheet = OneDriveDocument(paramId, sheetName)
-      sheet.init().build()
-    } else if (new GoogleSheetsUtil().isValidGoogleSheetsUrl(paramId)) {
-      sheet = GoogleSheetsDocument(paramId, sheetName)
+    const domainName = DomainName(paramId)
+
+    if (domainName && domainName.endsWith('google.com') && paramId) {
+      sheet = GoogleSheet(paramId, sheetName)
       sheet.init().build()
     } else {
       sheet = XLSXDocument(paramId, sheetName)

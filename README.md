@@ -228,6 +228,30 @@ Make sure you have nodejs installed. You can run `nvm use` to use the version us
 - `npm run quality` - to run the linter and the unit tests
 - `npm run dev` - to run application in localhost:8080. This will watch the .js and .css files and rebuild on file changes
 
+### Optional: Local CORS Proxy (Express)
+
+If Google Sheets requests fail due to browser CORS limits in your environment, run the local proxy:
+
+1. Set these values in `.env`:
+
+```env
+CORS_PROXY=local
+CORS_PROXY_LOCAL_URL=http://localhost:8787/proxy?url=
+SHEET_VALIDATE_URL=http://localhost:8787/proxy?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2F
+```
+
+2. Start the proxy:
+
+```bash
+npm run proxy:local
+```
+
+3. In another terminal, run the app:
+
+```bash
+npm run dev
+```
+
 ## End to End Tests
 
 To run End to End tests, start the dev server and follow the required steps below:

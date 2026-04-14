@@ -304,7 +304,7 @@ const GoogleSheet = function (sheetReference, sheetName) {
     const all = values
     const header = all.shift()
     var blips = _.map(all, (blip) => new InputSanitizer().sanitizeForProtectedSheet(blip, header))
-    const title = featureToggles.UIRefresh2022 ? documentTitle : documentTitle + ' - ' + sheetName
+    const title = 'Google Sheet - ' + sheetName
     featureToggles.UIRefresh2022
       ? plotRadarGraph(title, blips, sheetName, sheetNames)
       : plotRadar(title, blips, sheetName, sheetNames)
@@ -400,9 +400,11 @@ const Factory = function () {
     }
 
     const domainName = DomainName(paramId)
+    const isLocalFileContext = window.location.protocol === 'file:' || window.location.origin === 'null'
 
     if (domainName && domainName.endsWith('google.com') && paramId) {
-      sheet = GoogleSheet(paramId, sheetName)
+      // In file:// context Google OAuth postMessage fails; use public XLSX export flow instead.
+      sheet = isLocalFileContext ? GoogleSheetsDocument(paramId, sheetName) : GoogleSheet(paramId, sheetName)
       sheet.init().build()
     } else {
       sheet = XLSXDocument(paramId, sheetName)

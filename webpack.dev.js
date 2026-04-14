@@ -27,12 +27,6 @@ Object.entries(featureToggles).forEach(function ([key, value]) {
 module.exports = merge(common, {
   mode: 'development',
   entry: { main: main },
-  output: {
-    publicPath: '/',
-  },
-  devServer: {
-    historyApiFallback: true,
-  },
   performance: {
     hints: false,
   },

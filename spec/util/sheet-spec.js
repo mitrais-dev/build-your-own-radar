@@ -14,7 +14,6 @@ describe('sheet', function () {
     jest.clearAllMocks()
     process.env = oldEnv
     delete global.fetch
-    delete global.gapi
   })
 
   it('knows to find the sheet id from published URL', function () {
@@ -154,15 +153,6 @@ describe('sheet', function () {
       status: 200,
       arrayBuffer: jest.fn().mockResolvedValue(workbookBuffer),
     })
-    global.gapi = {
-      client: {
-        sheets: {
-          spreadsheets: {
-            get: jest.fn(),
-          },
-        },
-      },
-    }
 
     const sheet = new Sheet('sheetId')
     await sheet.getSheet()
@@ -170,27 +160,17 @@ describe('sheet', function () {
     expect(fetch).toHaveBeenCalledWith(
       'http://localhost:8787/proxy?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2FsheetId%2Fexport%3Fformat%3Dxlsx',
     )
-    expect(gapi.client.sheets.spreadsheets.get).not.toHaveBeenCalled()
 
     const data = await sheet.getData('Radar!A1:F')
     expect(data.result.values[1][0]).toEqual('alpha')
   })
 
-  it('falls back to gapi when public fetch via local proxy fails', async () => {
+  it('returns forbidden response when public fetch via local proxy fails', async () => {
     global.fetch = jest.fn().mockRejectedValue(new Error('proxy unavailable'))
-    global.gapi = {
-      client: {
-        sheets: {
-          spreadsheets: {
-            get: jest.fn().mockResolvedValue({ status: 200, result: { sheets: [], properties: { title: 'x' } } }),
-          },
-        },
-      },
-    }
 
     const sheet = new Sheet('sheetId')
     await sheet.getSheet()
 
-    expect(gapi.client.sheets.spreadsheets.get).toHaveBeenCalledWith({ spreadsheetId: 'sheetId' })
+    expect(sheet.sheetResponse.status).toBe(403)
   })
 })

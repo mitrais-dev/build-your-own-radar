@@ -1,4 +1,3 @@
-/* global gapi */
 const SheetNotFoundError = require('../../src/exceptions/sheetNotFoundError')
 const ExceptionMessages = require('./exceptionMessages')
 const config = require('../config')
@@ -17,12 +16,10 @@ const Sheet = function (sheetReference) {
   self.validate = function (callback) {
     var apiKeyEnabled = process.env.API_KEY || false
     var targetURL = 'https://docs.google.com/spreadsheets/d/' + self.id
-    var localProxyBaseUrl = getLocalProxyBaseUrl()
-    var feedURL = localProxyBaseUrl + encodeURIComponent(targetURL)
 
     // TODO: Move this out (as HTTPClient)
     var xhr = new XMLHttpRequest()
-    xhr.open('GET', feedURL, true)
+    xhr.open('GET', targetURL, true)
     xhr.onreadystatechange = function () {
       if (xhr.readyState === 4) {
         if (xhr.status === 200) {
@@ -37,15 +34,10 @@ const Sheet = function (sheetReference) {
     xhr.send(null)
   }
 
-  function getLocalProxyBaseUrl() {
-    return process.env.CORS_PROXY_LOCAL_URL || 'http://localhost:8787/proxy?url='
-  }
-
   async function tryGetPublicSheetResponse() {
     try {
       const publicExportUrl = 'https://docs.google.com/spreadsheets/d/' + self.id + '/export?format=xlsx'
-      const proxyUrl = getLocalProxyBaseUrl() + encodeURIComponent(publicExportUrl)
-      const response = await fetch(proxyUrl)
+      const response = await fetch(publicExportUrl)
 
       if (!response.ok) {
         return null
@@ -97,24 +89,13 @@ const Sheet = function (sheetReference) {
   }
 
   self.getSheet = async function () {
-    dataFetcher = function (range) {
-      return gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: self.id,
-        range: range,
-      })
-    }
-
     const publicSheetResponse = await tryGetPublicSheetResponse()
     if (publicSheetResponse) {
       self.sheetResponse = publicSheetResponse
       return
     }
 
-    try {
-      self.sheetResponse = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: self.id })
-    } catch (error) {
-      self.sheetResponse = error
-    }
+    self.sheetResponse = { status: 403 }
   }
 
   self.getData = function (range) {

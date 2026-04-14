@@ -42,8 +42,6 @@ jobs:
         run: npm test
       - name: Build
         env:
-          USE_CORS_PROXY: ${{ vars.USE_CORS_PROXY }}
-          CORS_PROXY: ${{ vars.CORS_PROXY }}
           ALLOW_PUBLIC_URLS: ${{ vars.ALLOW_PUBLIC_URLS }}
           RADAR_DATA_URL: ${{ vars.RADAR_DATA_URL }}
         if: ${{ github.event_name == 'release' }}

@@ -27,6 +27,11 @@ const GoogleAuth = function () {
   }
 
   self.loadAuthAPI = function () {
+    if (self.isLocalFileOrigin()) {
+      plotLocalFileOriginErrorMessage()
+      return
+    }
+
     !self.gapiInitiated &&
       self.content.append('script').attr('src', 'https://apis.google.com/js/api.js').on('load', self.handleClientLoad)
   }

@@ -67,7 +67,7 @@ describe('GoogleSheetsUtil', () => {
   })
 
   describe('fetchExcelFile', () => {
-    const allOriginsBaseUrl = 'api.allorigins.win/raw?url='
+    const localProxyBaseUrl = 'http://localhost:8787/proxy?url='
 
     it('should fetch excel file successfully from Google Sheets', async () => {
       const fakeBuffer = new ArrayBuffer(8)
@@ -80,7 +80,7 @@ describe('GoogleSheetsUtil', () => {
       const url = 'https://docs.google.com/spreadsheets/d/1lEo4nGMcbfcdw6PRIo59XCJhUplbIhqy/edit'
       const buffer = await util.fetchExcelFile(url)
 
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining(allOriginsBaseUrl), expect.any(Object))
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining(localProxyBaseUrl), expect.any(Object))
       expect(buffer).toBe(fakeBuffer)
     })
 
@@ -95,7 +95,7 @@ describe('GoogleSheetsUtil', () => {
       const id = '1lEo4nGMcbfcdw6PRIo59XCJhUplbIhqy'
       const buffer = await util.fetchExcelFile(id)
 
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining(allOriginsBaseUrl), expect.any(Object))
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining(localProxyBaseUrl), expect.any(Object))
       expect(buffer).toBe(fakeBuffer)
     })
 

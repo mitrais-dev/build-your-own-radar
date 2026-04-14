@@ -1,5 +1,6 @@
 const Sheet = require('../../src/util/sheet')
 const config = require('../../src/config')
+const X = require('xlsx')
 
 jest.mock('../../src/config')
 describe('sheet', function () {
@@ -12,6 +13,8 @@ describe('sheet', function () {
   afterEach(() => {
     jest.clearAllMocks()
     process.env = oldEnv
+    delete global.fetch
+    delete global.gapi
   })
 
   it('knows to find the sheet id from published URL', function () {
@@ -62,7 +65,7 @@ describe('sheet', function () {
     expect(xhrMock.open).toHaveBeenCalledTimes(1)
     expect(xhrMock.open).toHaveBeenCalledWith(
       'GET',
-      'https://docs.google.com/spreadsheets/d/http://example.com/a/b/c/d/?x=y',
+      'http://localhost:8787/proxy?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fhttp%3A%2F%2Fexample.com%2Fa%2Fb%2Fc%2Fd%2F%3Fx%3Dy',
       true,
     )
     expect(xhrMock.send).toHaveBeenCalledTimes(1)
@@ -71,7 +74,7 @@ describe('sheet', function () {
     expect(mockCallback).toHaveBeenCalledWith(null, 'API_KEY')
   })
 
-  it('calls back with error if sheet does not exist', function () {
+  it('calls back with nothing for non-404 validation response', function () {
     const mockCallback = jest.fn()
     const xhrMock = { open: jest.fn(), send: jest.fn(), readyState: 4, status: 401, response: 'response' }
     jest.spyOn(window, 'XMLHttpRequest').mockImplementation(() => xhrMock)
@@ -83,13 +86,13 @@ describe('sheet', function () {
     expect(xhrMock.open).toHaveBeenCalledTimes(1)
     expect(xhrMock.open).toHaveBeenCalledWith(
       'GET',
-      'https://docs.google.com/spreadsheets/d/http://example.com/a/b/c/d/?x=y',
+      'http://localhost:8787/proxy?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fhttp%3A%2F%2Fexample.com%2Fa%2Fb%2Fc%2Fd%2F%3Fx%3Dy',
       true,
     )
     expect(xhrMock.send).toHaveBeenCalledTimes(1)
     expect(xhrMock.send).toHaveBeenCalledWith(null)
     expect(mockCallback).toHaveBeenCalledTimes(1)
-    expect(mockCallback).toHaveBeenCalledWith({ message: 'UNAUTHORIZED' }, 'API_KEY')
+    expect(mockCallback).toHaveBeenCalledWith(null, 'API_KEY')
   })
 
   it('should give the sheet not found error with new message', () => {
@@ -105,7 +108,7 @@ describe('sheet', function () {
     expect(xhrMock.open).toHaveBeenCalledTimes(1)
     expect(xhrMock.open).toHaveBeenCalledWith(
       'GET',
-      'https://docs.google.com/spreadsheets/d/http://example.com/a/b/c/d/?x=y',
+      'http://localhost:8787/proxy?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fhttp%3A%2F%2Fexample.com%2Fa%2Fb%2Fc%2Fd%2F%3Fx%3Dy',
       true,
     )
     expect(xhrMock.send).toHaveBeenCalledTimes(1)
@@ -128,12 +131,66 @@ describe('sheet', function () {
     expect(xhrMock.open).toHaveBeenCalledTimes(1)
     expect(xhrMock.open).toHaveBeenCalledWith(
       'GET',
-      'https://docs.google.com/spreadsheets/d/http://example.com/a/b/c/d/?x=y',
+      'http://localhost:8787/proxy?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fhttp%3A%2F%2Fexample.com%2Fa%2Fb%2Fc%2Fd%2F%3Fx%3Dy',
       true,
     )
     expect(xhrMock.send).toHaveBeenCalledTimes(1)
     expect(xhrMock.send).toHaveBeenCalledWith(null)
     expect(mockCallback).toHaveBeenCalledTimes(1)
     expect(mockCallback).toHaveBeenCalledWith({ message: errorMessage }, 'API_KEY')
+  })
+
+  it('fetches public sheet via local proxy before oauth flow', async () => {
+    const workbook = X.utils.book_new()
+    const worksheet = X.utils.aoa_to_sheet([
+      ['name', 'ring', 'quadrant', 'isNew', 'description', 'url'],
+      ['alpha', 'adopt', 'tools', 'TRUE', 'desc', 'https://example.com'],
+    ])
+    X.utils.book_append_sheet(workbook, worksheet, 'Radar')
+    const workbookBuffer = X.write(workbook, { type: 'array', bookType: 'xlsx' })
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: jest.fn().mockResolvedValue(workbookBuffer),
+    })
+    global.gapi = {
+      client: {
+        sheets: {
+          spreadsheets: {
+            get: jest.fn(),
+          },
+        },
+      },
+    }
+
+    const sheet = new Sheet('sheetId')
+    await sheet.getSheet()
+
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:8787/proxy?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2FsheetId%2Fexport%3Fformat%3Dxlsx',
+    )
+    expect(gapi.client.sheets.spreadsheets.get).not.toHaveBeenCalled()
+
+    const data = await sheet.getData('Radar!A1:F')
+    expect(data.result.values[1][0]).toEqual('alpha')
+  })
+
+  it('falls back to gapi when public fetch via local proxy fails', async () => {
+    global.fetch = jest.fn().mockRejectedValue(new Error('proxy unavailable'))
+    global.gapi = {
+      client: {
+        sheets: {
+          spreadsheets: {
+            get: jest.fn().mockResolvedValue({ status: 200, result: { sheets: [], properties: { title: 'x' } } }),
+          },
+        },
+      },
+    }
+
+    const sheet = new Sheet('sheetId')
+    await sheet.getSheet()
+
+    expect(gapi.client.sheets.spreadsheets.get).toHaveBeenCalledWith({ spreadsheetId: 'sheetId' })
   })
 })

@@ -1,7 +1,7 @@
 /**
  * CORS Proxy Utility
  * Uses free public CORS proxy to bypass CORS restrictions
- * Currently using api.allorigins.win which is reliable and free
+ * Defaults to local proxy for safer and more controllable behavior
  */
 
 const CORSProxy = function () {
@@ -43,16 +43,16 @@ const CORSProxy = function () {
 
   /**
    * Get the active CORS proxy URL
-   * Default to allorigins which is most reliable
+   * Default to local proxy
    * @returns {string} Proxy base URL
    */
   self.getProxyUrl = function () {
-    const selectedProxy = process.env.CORS_PROXY || 'allorigins'
+    const selectedProxy = process.env.CORS_PROXY || 'local'
     const proxy = PROXY_OPTIONS.find((p) => p.name === selectedProxy)
     if (proxy) {
       return proxy.url
     }
-    const fallback = PROXY_OPTIONS.find((p) => p.name === 'allorigins')
+    const fallback = PROXY_OPTIONS.find((p) => p.name === 'local')
     return fallback ? fallback.url : PROXY_OPTIONS[0].url
   }
 

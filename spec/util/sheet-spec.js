@@ -64,7 +64,7 @@ describe('sheet', function () {
     expect(xhrMock.open).toHaveBeenCalledTimes(1)
     expect(xhrMock.open).toHaveBeenCalledWith(
       'GET',
-      'http://localhost:8787/proxy?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fhttp%3A%2F%2Fexample.com%2Fa%2Fb%2Fc%2Fd%2F%3Fx%3Dy',
+      'https://docs.google.com/spreadsheets/d/http://example.com/a/b/c/d/?x=y',
       true,
     )
     expect(xhrMock.send).toHaveBeenCalledTimes(1)
@@ -85,7 +85,7 @@ describe('sheet', function () {
     expect(xhrMock.open).toHaveBeenCalledTimes(1)
     expect(xhrMock.open).toHaveBeenCalledWith(
       'GET',
-      'http://localhost:8787/proxy?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fhttp%3A%2F%2Fexample.com%2Fa%2Fb%2Fc%2Fd%2F%3Fx%3Dy',
+      'https://docs.google.com/spreadsheets/d/http://example.com/a/b/c/d/?x=y',
       true,
     )
     expect(xhrMock.send).toHaveBeenCalledTimes(1)
@@ -107,7 +107,7 @@ describe('sheet', function () {
     expect(xhrMock.open).toHaveBeenCalledTimes(1)
     expect(xhrMock.open).toHaveBeenCalledWith(
       'GET',
-      'http://localhost:8787/proxy?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fhttp%3A%2F%2Fexample.com%2Fa%2Fb%2Fc%2Fd%2F%3Fx%3Dy',
+      'https://docs.google.com/spreadsheets/d/http://example.com/a/b/c/d/?x=y',
       true,
     )
     expect(xhrMock.send).toHaveBeenCalledTimes(1)
@@ -130,7 +130,7 @@ describe('sheet', function () {
     expect(xhrMock.open).toHaveBeenCalledTimes(1)
     expect(xhrMock.open).toHaveBeenCalledWith(
       'GET',
-      'http://localhost:8787/proxy?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fhttp%3A%2F%2Fexample.com%2Fa%2Fb%2Fc%2Fd%2F%3Fx%3Dy',
+      'https://docs.google.com/spreadsheets/d/http://example.com/a/b/c/d/?x=y',
       true,
     )
     expect(xhrMock.send).toHaveBeenCalledTimes(1)
@@ -158,7 +158,7 @@ describe('sheet', function () {
     await sheet.getSheet()
 
     expect(fetch).toHaveBeenCalledWith(
-      'http://localhost:8787/proxy?url=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2FsheetId%2Fexport%3Fformat%3Dxlsx',
+      'https://docs.google.com/spreadsheets/d/sheetId/export?format=xlsx',
     )
 
     const data = await sheet.getData('Radar!A1:F')

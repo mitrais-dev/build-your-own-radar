@@ -7,7 +7,7 @@
 [![AGPL License](https://badgen.net/github/license/thoughtworks/build-your-own-radar)](https://github.com/thoughtworks/build-your-own-radar)
 
 > **🎉 This is now a STATIC FRONTEND-ONLY application!** No backend server required.  
-> All CORS requests use a free public proxy. See [STATIC_FE_MIGRATION.md](STATIC_FE_MIGRATION.md) for details.
+> Data is loaded directly by the frontend using public URLs. See [STATIC_FE_MIGRATION.md](STATIC_FE_MIGRATION.md) for details.
 
 A library that generates an interactive radar, inspired by [thoughtworks.com/radar](http://thoughtworks.com/radar).
 
@@ -51,76 +51,11 @@ This column accepts the following case-insensitive values :
 
 The URL will be similar to [https://docs.google.com/spreadsheets/d/1waDG0_W3-yNiAaUfxcZhTKvl7AUCgXwQw8mdPjCz86U/edit](https://docs.google.com/spreadsheets/d/1waDG0_W3-yNiAaUfxcZhTKvl7AUCgXwQw8mdPjCz86U/edit). In theory we are only interested in the part between '/d/' and '/edit' but you can use the whole URL if you want.
 
-### Using private Google Sheet
+### Private Google Sheet support
 
-When using a private Google Sheet as your input, you will be prompted with a Google One Tap Login popup. Once you have logged in with the appropriate Google Account and authorized our app to access the sheet, the Radar will be generated.
+Private Google Sheets are not supported in the current public-only flow.
 
-The input data format for the private sheet is the same as a public Google Sheet.
-
-### Using CSV data
-
-The other way to provide your data is using CSV document format.
-You can enter a publicly accessible URL (not behind any authentication) of a CSV file into the input field on the first page.
-For example, a [raw URL](https://raw.githubusercontent.com/thoughtworks/build-your-own-radar/master/spec/end_to_end_tests/resources/sheet.csv) for a CSV file hosted publicly on GitHub can be used.
-The format is just the same as that of the Google Sheet, the example is as follows:
-
-```
-name,ring,quadrant,isNew,description
-Composer,adopt,tools,TRUE,"Although the idea of dependency management ..."
-Canary builds,trial,techniques,FALSE,"Many projects have external code dependencies ..."
-Apache Kylin,assess,platforms,TRUE,"Apache Kylin is an open source analytics solution ..."
-JSF,hold,languages & frameworks,FALSE,"We continue to see teams run into trouble using JSF ..."
-```
-
-If you do not want to host the CSV file publicly, you can follow [these steps](#advanced-option---docker-image-with-a-csvjson-file-from-the-host-machine) to host the file locally on your BYOR docker instance itself.
-
-**_Note:_** The CSV file parsing is using D3 library, so consult the [D3 documentation](https://github.com/d3/d3-request/blob/master/README.md#csv) for the data format details.
-
-### Using JSON data
-
-Another other way to provide your data is using a JSON array.
-You can enter a publicly accessible URL (not behind any authentication) of a JSON file into the input field on the first page.
-For example, a [raw URL](https://raw.githubusercontent.com/thoughtworks/build-your-own-radar/master/spec/end_to_end_tests/resources/data.json) for a JSON file hosted publicly on GitHub can be used.
-The format of the JSON is an array of objects with the the fields: `name`, `ring`, `quadrant`, `isNew`, and `description`.
-
-An example:
-
-```json
-[
-  {
-    "name": "Composer",
-    "ring": "adopt",
-    "quadrant": "tools",
-    "isNew": "TRUE",
-    "description": "Although the idea of dependency management ..."
-  },
-  {
-    "name": "Canary builds",
-    "ring": "trial",
-    "quadrant": "techniques",
-    "isNew": "FALSE",
-    "description": "Many projects have external code dependencies ..."
-  },
-  {
-    "name": "Apache Kylin",
-    "ring": "assess",
-    "quadrant": "platforms",
-    "isNew": "TRUE",
-    "description": "Apache Kylin is an open source analytics solution ..."
-  },
-  {
-    "name": "JSF",
-    "ring": "hold",
-    "quadrant": "languages & frameworks",
-    "isNew": "FALSE",
-    "description": "We continue to see teams run into trouble using JSF ..."
-  }
-]
-```
-
-If you do not want to host the JSON file publicly, you can follow [these steps](#advanced-option---docker-image-with-a-csvjson-file-from-the-host-machine) to host the file locally on your BYOR docker instance itself.
-
-**_Note:_** The JSON file parsing is using D3 library, so consult the [D3 documentation](https://github.com/d3/d3-request/blob/master/README.md#json) for the data format details.
+Use a sheet with **Anyone with the link** + **Viewer** permission.
 
 ### Building the radar
 
@@ -128,32 +63,20 @@ Paste the URL in the input field on the home page.
 
 That's it!
 
-**_Note:_** When using the BYOR app on [radar.thoughtworks.com](https://radar.thoughtworks.com), the ring and quadrant names should be among the values mentioned in the [example above](#setting-up-your-data). This holds good for Google Sheet, CSV or JSON inputs.
+**_Note:_** When using the BYOR app on [radar.thoughtworks.com](https://radar.thoughtworks.com), the ring and quadrant names should be among the values mentioned in the [example above](#setting-up-your-data). This holds good for Google Sheet inputs.
 For a self hosted BYOR app, there is no such condition on the names. Instructions to specify custom names are in the [next section](#more-complex-usage).
 
 Check [this page](https://www.thoughtworks.com/radar/byor) for step by step guidance.
 
 ### More complex usage
 
-To create the data representation, you can use the Google Sheet [factory](/src/util/factory.js) methods or CSV/JSON, or you can also insert all your data straight into the code.
+To create the data representation, you can use the Google Sheet [factory](/src/util/factory.js) methods.
 
-The app uses [Google Sheets APIs](https://developers.google.com/sheets/api/reference/rest) to fetch the data from a Google Sheet or [D3.js](https://d3js.org/) if supplied as CSV/JSON, so refer to their documentation for more advanced interaction. The input data is sanitized by whitelisting HTML tags with [sanitize-html](https://github.com/punkave/sanitize-html).
+The app fetches public Google Sheets via XLSX export URL and parses data on the frontend. The input data is sanitized by whitelisting HTML tags with [sanitize-html](https://github.com/punkave/sanitize-html).
 
 The application uses [webpack](https://webpack.github.io/) to package dependencies and minify all .js and .scss files.
 
-Google OAuth Client ID and API Key can be obtained from your Google Developer Console. OAuth Client ID is mandatory for private Google Sheets, as it is needed for Google Authentication and Authorization of our app.
-
-```
-export CLIENT_ID=[Google Client ID]
-```
-
-**_Note:_** Make sure to set the "Authorized JavaScript origins" field for the Client ID to the right origin domain, with port, where the app is hosted. Examples: `http://localhost:8080` or `https://radar.thoughtworks.com`.
-
-Optionally, API Key can be set to bypass Google Authentication for public sheets.
-
-```
-export API_KEY=[Google API Key]
-```
+Google OAuth credentials are not required for the current public-only Google Sheets flow.
 
 To enable Google Tag Manager, add the following environment variable.
 
@@ -180,7 +103,7 @@ We have released BYOR as a docker image for our users. The image is available in
 
 ```
 $ docker pull wwwthoughtworks/build-your-own-radar
-$ docker run --rm -p 8080:80 -e CLIENT_ID="[Google Client ID]" wwwthoughtworks/build-your-own-radar:latest
+$ docker run --rm -p 8080:80 wwwthoughtworks/build-your-own-radar:latest
 $ open http://localhost:8080
 ```
 
@@ -189,31 +112,8 @@ $ open http://localhost:8080
 - The other environment variables mentioned in the previous section can be used with `docker run` as well.
 - Docker images for all the [releases](https://github.com/thoughtworks/build-your-own-radar/releases) are available with their respective tags (eg: `wwwthoughtworks/build-your-own-radar:v1.0.0`).
 
-### Advanced option - Docker image with a CSV/JSON file from the host machine
-
-You can check your setup by clicking on "Build my radar" and by loading the `csv`/`json` file from these locations:
-
-- http://localhost:8080/files/radar.csv
-- http://localhost:8080/files/radar.json
-
-```
-$ docker pull wwwthoughtworks/build-your-own-radar
-$ docker run --rm -p 8080:80 -e SERVER_NAMES="localhost 127.0.0.1" -v /mnt/radar/files/:/opt/build-your-own-radar/files wwwthoughtworks/build-your-own-radar:latest
-$ open http://localhost:8080
-```
-
-This will:
-
-- Spawn a server that will listen locally on port 8080.
-- Mount the host volume on `/mnt/radar/files/` into the container on `/opt/build-your-own-radar/files/`.
-- Open http://localhost:8080 and for the URL enter: `http://localhost:8080/files/<NAME_OF_YOUR_FILE>.<EXTENSION_OF_YOUR_FILE[csv/json]>`. It needs to be a csv/json file.
-
-You can now work locally on your machine, updating the csv/json file and render the result back on your browser.
-There is a sample csv and json file placed in `spec/end_to_end_tests/resources/localfiles/` for reference.
-
 **_Notes:_**
 
-- If API Key is also available, same can be provided to the `docker run` command as `-e API_KEY=[Google API Key]`.
 - For setting the `publicPath` in the webpack config while using this image, the path can be passed as an environment variable called `ASSET_PATH`.
 
 ## Contribute
@@ -245,8 +145,8 @@ To run End to End tests, start the dev server and follow the required steps belo
 
 **_Notes:_**
 
-- Currently, end to end tests are not supported for private Google Sheets, as it requires interacting with the Google One Tap popup.
-- To run end to end tests for public Google Sheets, the `CLIENT_ID` and `API_KEY` environment variables need to set as well (steps details [here](#more-complex-usage)), to provide Cypress with an authenticated session (without having to interact with Google's auth popups).
+- End to end tests should use publicly accessible Google Sheets inputs.
+- `CLIENT_ID` and `API_KEY` are not required for the current Google Sheets flow.
 
 ### Don't want to install node? Run with one line docker
 

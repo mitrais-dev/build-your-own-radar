@@ -1,11 +1,11 @@
-/* global gapi */
 const SheetNotFoundError = require('../../src/exceptions/sheetNotFoundError')
-const UnauthorizedError = require('../../src/exceptions/unauthorizedError')
 const ExceptionMessages = require('./exceptionMessages')
 const config = require('../config')
+const X = require('xlsx')
 
 const Sheet = function (sheetReference) {
   var self = {}
+  var dataFetcher
   const featureToggles = config().featureToggles
 
   ;(function () {
@@ -15,11 +15,11 @@ const Sheet = function (sheetReference) {
 
   self.validate = function (callback) {
     var apiKeyEnabled = process.env.API_KEY || false
-    var feedURL = 'https://docs.google.com/spreadsheets/d/' + self.id
+    var targetURL = 'https://docs.google.com/spreadsheets/d/' + self.id
 
     // TODO: Move this out (as HTTPClient)
     var xhr = new XMLHttpRequest()
-    xhr.open('GET', feedURL, true)
+    xhr.open('GET', targetURL, true)
     xhr.onreadystatechange = function () {
       if (xhr.readyState === 4) {
         if (xhr.status === 200) {
@@ -27,11 +27,58 @@ const Sheet = function (sheetReference) {
         } else if (xhr.status === 404) {
           return callback(self.createSheetNotFoundError(), apiKeyEnabled)
         } else {
-          return callback(new UnauthorizedError(ExceptionMessages.UNAUTHORIZED), apiKeyEnabled)
+          return callback(null, apiKeyEnabled)
         }
       }
     }
     xhr.send(null)
+  }
+
+  async function tryGetPublicSheetResponse() {
+    try {
+      const publicExportUrl = 'https://docs.google.com/spreadsheets/d/' + self.id + '/export?format=xlsx'
+      const response = await fetch(publicExportUrl)
+
+      if (!response.ok) {
+        return null
+      }
+
+      const workbookBuffer = await response.arrayBuffer()
+      const workbook = X.read(workbookBuffer, { type: 'array' })
+
+      if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+        return null
+      }
+
+      dataFetcher = function (range) {
+        const sheetName = range.split('!')[0]
+        const worksheet = workbook.Sheets[sheetName]
+
+        if (!worksheet) {
+          return Promise.reject(self.createSheetNotFoundError())
+        }
+
+        return Promise.resolve({
+          result: {
+            values: X.utils.sheet_to_json(worksheet, { header: 1, raw: false }),
+          },
+        })
+      }
+
+      return {
+        status: 200,
+        result: {
+          properties: {
+            title: (workbook.Props && workbook.Props.Title) || 'Google Sheet',
+          },
+          sheets: workbook.SheetNames.map((sheetTitle) => ({
+            properties: { title: sheetTitle },
+          })),
+        },
+      }
+    } catch (_error) {
+      return null
+    }
   }
 
   self.createSheetNotFoundError = function () {
@@ -42,18 +89,17 @@ const Sheet = function (sheetReference) {
   }
 
   self.getSheet = async function () {
-    try {
-      self.sheetResponse = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: self.id })
-    } catch (error) {
-      self.sheetResponse = error
+    const publicSheetResponse = await tryGetPublicSheetResponse()
+    if (publicSheetResponse) {
+      self.sheetResponse = publicSheetResponse
+      return
     }
+
+    self.sheetResponse = { status: 403 }
   }
 
   self.getData = function (range) {
-    return gapi.client.sheets.spreadsheets.values.get({
-      spreadsheetId: self.id,
-      range: range,
-    })
+    return dataFetcher(range)
   }
 
   self.processSheetResponse = async function (sheetName, createBlips, handleError) {

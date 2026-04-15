@@ -18,12 +18,9 @@ const SheetNotFoundError = require('../exceptions/sheetNotFoundError')
 const ContentValidator = require('./contentValidator')
 const Sheet = require('./sheet')
 const ExceptionMessages = require('./exceptionMessages')
-const GoogleAuth = require('./googleAuth')
 const config = require('../config')
 const featureToggles = config().featureToggles
 const { getDocumentOrSheetId, getSheetName } = require('./urlUtils')
-const OneDriveUtil = require('./oneDriveUtil')
-const GoogleSheetsUtil = require('./googleSheetsUtil')
 const { getGraphSize, graphConfig, isValidConfig } = require('../graphing/config')
 const InvalidConfigError = require('../exceptions/invalidConfigError')
 
@@ -237,57 +234,38 @@ const OneDriveDocument = function (oneDriveUrl, sheetName) {
   return self
 }
 
-const GoogleSheetsDocument = function (sheetsUrl, sheetName) {
-  var self = {}
-  const googleSheetsUtil = new GoogleSheetsUtil()
-
-  self.build = function () {
-    if (!googleSheetsUtil.isValidGoogleSheetsUrl(sheetsUrl)) {
-      plotErrorMessage(new Error('Invalid Google Sheets URL format'), 'google-sheets')
-      return
-    }
-
-    googleSheetsUtil
-      .fetchExcelFile(sheetsUrl)
-      .then((arrayBuffer) => {
-        try {
-          var workbook = X.read(arrayBuffer, { type: 'array' })
-          var currentSheetName = sheetName
-          if (!currentSheetName) {
-            currentSheetName = workbook.SheetNames[0]
-          }
-
-          var roa = X.utils.sheet_to_json(workbook.Sheets[currentSheetName], { raw: false }) || {}
-          var blips = _.map(roa, new InputSanitizer().sanitize)
-          const title = 'Google Sheets Radar - ' + currentSheetName
-          plotRadarGraph(title, blips, currentSheetName, Object.keys(workbook.Sheets))
-        } catch (exception) {
-          plotErrorMessage(exception, 'google-sheets')
-        }
-      })
-      .catch((exception) => plotErrorMessage(exception, 'google-sheets'))
-  }
-
-  self.init = function () {
-    plotLoading()
-    return self
-  }
-
-  return self
-}
-
 const GoogleSheet = function (sheetReference, sheetName) {
   var self = {}
 
+  async function loadPublicSheet(callback) {
+    self.error = false
+    var sheet = new Sheet(sheetReference)
+    await sheet.getSheet()
+    await sheet.processSheetResponse(sheetName, createBlipsForProtectedSheet, (error) => {
+      if (error.status === 401 || error.status === 403) {
+        self.error = true
+        plotErrorMessage(new Error('Google Sheet is not publicly accessible'), 'sheet')
+      } else if (error instanceof MalformedDataError) {
+        plotErrorMessage(error, 'sheet')
+      } else {
+        plotErrorMessage(sheet.createSheetNotFoundError(), 'sheet')
+      }
+    })
+
+    if (callback) {
+      callback()
+    }
+  }
+
   self.build = function () {
     var sheet = new Sheet(sheetReference)
-    sheet.validate(function (error, apiKeyEnabled) {
+    sheet.validate(async function (error) {
       if (error instanceof SheetNotFoundError) {
         plotErrorMessage(error, 'sheet')
         return
       }
 
-      self.authenticate(false, apiKeyEnabled)
+      await loadPublicSheet()
     })
   }
 
@@ -304,36 +282,10 @@ const GoogleSheet = function (sheetReference, sheetName) {
     const all = values
     const header = all.shift()
     var blips = _.map(all, (blip) => new InputSanitizer().sanitizeForProtectedSheet(blip, header))
-    const title = featureToggles.UIRefresh2022 ? documentTitle : documentTitle + ' - ' + sheetName
+    const title = 'Google Sheet - ' + sheetName
     featureToggles.UIRefresh2022
       ? plotRadarGraph(title, blips, sheetName, sheetNames)
       : plotRadar(title, blips, sheetName, sheetNames)
-  }
-
-  self.authenticate = function (force = false, apiKeyEnabled, callback) {
-    GoogleAuth.loadGoogle(force, async function () {
-      self.error = false
-      const sheet = new Sheet(sheetReference)
-      await sheet.getSheet()
-      if (sheet.sheetResponse.status === 403 && !GoogleAuth.gsiInitiated && !force) {
-        // private sheet
-        GoogleAuth.loadGSI()
-      } else {
-        await sheet.processSheetResponse(sheetName, createBlipsForProtectedSheet, (error) => {
-          if (error.status === 403) {
-            self.error = true
-            plotUnauthorizedErrorMessage()
-          } else if (error instanceof MalformedDataError) {
-            plotErrorMessage(error, 'sheet')
-          } else {
-            plotErrorMessage(sheet.createSheetNotFoundError(), 'sheet')
-          }
-        })
-        if (callback) {
-          callback()
-        }
-      }
-    })
   }
 
   self.init = function () {
@@ -342,6 +294,12 @@ const GoogleSheet = function (sheetReference, sheetName) {
   }
 
   return self
+}
+
+const DomainName = function (url) {
+  var search = /.+:\/\/([^\\/]+)/
+  var match = search.exec(decodeURIComponent(url.replace(/\+/g, ' ')))
+  return match == null ? null : match[1]
 }
 
 const Factory = function () {
@@ -393,13 +351,10 @@ const Factory = function () {
       console.log('No URL in query params, using default RADAR_DATA_URL:', paramId)
     }
 
-    // Check if paramId is OneDrive URL
-    const oneDriveUtil = new OneDriveUtil()
-    if (oneDriveUtil.isValidOneDriveUrl(paramId)) {
-      sheet = OneDriveDocument(paramId, sheetName)
-      sheet.init().build()
-    } else if (new GoogleSheetsUtil().isValidGoogleSheetsUrl(paramId)) {
-      sheet = GoogleSheetsDocument(paramId, sheetName)
+    const domainName = DomainName(paramId)
+
+    if (domainName && domainName.endsWith('google.com') && paramId) {
+      sheet = GoogleSheet(paramId, sheetName)
       sheet.init().build()
     } else {
       sheet = XLSXDocument(paramId, sheetName)
@@ -556,63 +511,6 @@ function plotError(exception, fileType) {
 function showErrorMessage(exception, fileType) {
   document.querySelector('.helper-description .loader-text').style.display = 'none'
   plotError(exception, fileType)
-}
-
-function plotUnauthorizedErrorMessage() {
-  let content
-  const helperDescription = d3.select('.helper-description')
-  if (!featureToggles.UIRefresh2022) {
-    content = d3.select('body').append('div').attr('class', 'input-sheet')
-    setDocumentTitle()
-
-    plotLogo(content)
-
-    const bannerText = '<div><h1>Build your own radar</h1></div>'
-
-    plotBanner(content, bannerText)
-
-    d3.selectAll('.loading').remove()
-  } else {
-    content = d3.select('main')
-    helperDescription.style('display', 'none')
-    d3.selectAll('.loader-text').remove()
-    d3.selectAll('.error-container').remove()
-  }
-  const currentUser = GoogleAuth.getEmail()
-  let homePageURL = window.location.protocol + '//' + window.location.hostname
-  homePageURL += window.location.port === '' ? '' : ':' + window.location.port
-  const goBack = '<a href=' + homePageURL + '>GO BACK</a>'
-  const message = `<strong>Oops!</strong> Looks like you are accessing this sheet using <b>${currentUser}</b>, which does not have permission.Try switching to another account.`
-
-  const container = content.append('div').attr('class', 'error-container')
-
-  const errorContainer = container.append('div').attr('class', 'error-container__message')
-
-  errorContainer.append('div').append('p').attr('class', 'error-title').html(message)
-  const newUi = featureToggles.UIRefresh2022 ? 'switch-account-button-newui' : 'switch-account-button'
-  const button = errorContainer.append('button').attr('class', `button ${newUi}`).text('Switch account')
-
-  errorContainer
-    .append('div')
-    .append('p')
-    .attr('class', 'error-subtitle')
-    .html(`or ${goBack} to try a different sheet.`)
-
-  button.on('click', () => {
-    let sheet
-    sheet = GoogleSheet(getDocumentOrSheetId(), getSheetName())
-
-    sheet.authenticate(true, false, () => {
-      if (featureToggles.UIRefresh2022 && !sheet.error) {
-        helperDescription.style('display', 'block')
-        errorContainer.remove()
-      } else if (featureToggles.UIRefresh2022 && sheet.error) {
-        helperDescription.style('display', 'none')
-      } else {
-        content.remove()
-      }
-    })
-  })
 }
 
 module.exports = Factory

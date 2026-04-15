@@ -36,9 +36,7 @@ const plugins = [
     'process.env.QUADRANTS': JSON.stringify(process.env.QUADRANTS),
     'process.env.ADOBE_LAUNCH_SCRIPT_URL': JSON.stringify(process.env.ADOBE_LAUNCH_SCRIPT_URL),
     'process.env.ALLOW_PUBLIC_URLS': JSON.stringify(process.env.ALLOW_PUBLIC_URLS),
-    'process.env.RADAR_DATA_URL': JSON.stringify(process.env.RADAR_DATA_URL),
-    'process.env.USE_CORS_PROXY': JSON.stringify(process.env.USE_CORS_PROXY || 'true'),
-    'process.env.CORS_PROXY': JSON.stringify(process.env.CORS_PROXY || 'allorigins'),
+    'process.env.RADAR_DATA_URL': JSON.stringify(process.env.RADAR_DATA_URL)
   }),
   new CopyPlugin({
     patterns: [{ from: path.resolve(__dirname, 'src/data'), to: 'data' }],

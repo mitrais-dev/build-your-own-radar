@@ -22,12 +22,26 @@ const GoogleAuth = function () {
   self.gapiInitiated = false
   self.gsiInitiated = false
 
+  self.isLocalFileOrigin = function () {
+    return window.location.protocol === 'file:' || window.location.origin === 'null'
+  }
+
   self.loadAuthAPI = function () {
+    if (self.isLocalFileOrigin()) {
+      plotLocalFileOriginErrorMessage()
+      return
+    }
+
     !self.gapiInitiated &&
       self.content.append('script').attr('src', 'https://apis.google.com/js/api.js').on('load', self.handleClientLoad)
   }
 
   self.loadGSI = function () {
+    if (self.isLocalFileOrigin()) {
+      plotLocalFileOriginErrorMessage()
+      return
+    }
+
     !self.gsiInitiated &&
       self.content
         .append('script')
@@ -66,6 +80,11 @@ const GoogleAuth = function () {
   }
 
   self.gsiCallback = async function (credentialResponse) {
+    if (!CLIENT_ID || !SCOPES) {
+      plotMissingGoogleAuthConfigErrorMessage()
+      return
+    }
+
     let jwToken
     if (credentialResponse) {
       jwToken = parseJwt(credentialResponse.credential)
@@ -84,6 +103,16 @@ const GoogleAuth = function () {
   }
 
   self.gsiLogin = async function (forceLogin = false) {
+    if (self.isLocalFileOrigin()) {
+      plotLocalFileOriginErrorMessage()
+      return
+    }
+
+    if (!CLIENT_ID || !SCOPES) {
+      plotMissingGoogleAuthConfigErrorMessage()
+      return
+    }
+
     self.forceLogin = forceLogin
     window.google.accounts.id.initialize({
       client_id: CLIENT_ID,
@@ -118,6 +147,29 @@ const GoogleAuth = function () {
       .html(`<strong> ${goBack} and please login.</strong>`)
   }
 
+  function plotLocalFileOriginErrorMessage() {
+    const message = '<strong>Authentication requires http(s) origin.</strong>'
+    const subtitle =
+      'Please run this app from a local server (for example: http://localhost:8080) instead of opening it via file://.'
+
+    d3.selectAll('.loader-text').remove()
+    let content = d3.select('body').select('.error-container').append('div').attr('class', 'input-sheet')
+    const errorContainer = content.append('div').attr('class', 'error-container__message')
+    errorContainer.append('div').append('p').attr('class', 'error-title').html(message)
+    errorContainer.append('div').append('p').attr('class', 'error-subtitle').html(`<strong>${subtitle}</strong>`)
+  }
+
+  function plotMissingGoogleAuthConfigErrorMessage() {
+    const message = '<strong>Google authentication is not configured.</strong>'
+    const subtitle = 'Set CLIENT_ID (and API_KEY if needed) in your environment, then reload the app.'
+
+    d3.selectAll('.loader-text').remove()
+    let content = d3.select('body').select('.error-container').append('div').attr('class', 'input-sheet')
+    const errorContainer = content.append('div').attr('class', 'error-container__message')
+    errorContainer.append('div').append('p').attr('class', 'error-title').html(message)
+    errorContainer.append('div').append('p').attr('class', 'error-subtitle').html(`<strong>${subtitle}</strong>`)
+  }
+
   self.handleClientLoad = function () {
     gapi.load('client', self.initClient)
   }
@@ -149,12 +201,18 @@ const GoogleAuth = function () {
   }
 
   self.initClient = async function () {
+    const initConfig = {
+      apiKey: API_KEY,
+      discoveryDocs: DISCOVERY_DOCS,
+    }
+
+    if (CLIENT_ID) {
+      initConfig.clientId = CLIENT_ID
+      initConfig.scope = SCOPES
+    }
+
     gapi.client
-      .init({
-        apiKey: API_KEY,
-        discoveryDocs: DISCOVERY_DOCS,
-        scope: SCOPES,
-      })
+      .init(initConfig)
       .then(() => {
         self.gapiInitiated = true
         self.loadedCallback()

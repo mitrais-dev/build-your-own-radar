@@ -10,6 +10,7 @@
   .input-sheet__logo {
     text-align: center;
     padding-bottom: 40px;
+
     a {
       border-bottom: none;
 
@@ -24,7 +25,7 @@
   }
 
   .input-sheet__banner {
-    background-image: url('/images/tech-radar-landing-page-wide.png');
+    background-image: url('./images/tech-radar-landing-page-wide.png');
     background-repeat: no-repeat;
     background-color: $grey-light;
     background-size: cover;
@@ -39,6 +40,7 @@
       display: table-cell;
       vertical-align: middle;
     }
+
     p,
     h1 {
       color: $white;

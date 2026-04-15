@@ -24,6 +24,7 @@
 
     &.no-blips {
       height: auto !important;
+
       .no-blip-text {
         display: block;
       }
@@ -125,6 +126,7 @@
 
     @if $UIRefresh2022 {
       path {
+
         &.ring-arc-3,
         &.ring-arc-2,
         &.ring-arc-1,
@@ -196,6 +198,7 @@
     }
 
     @if $UIRefresh2022 {
+
       circle,
       polygon,
       rect,
@@ -248,9 +251,11 @@
     }
 
     max-height: 0;
+
     @if not $UIRefresh2022 {
       max-width: 0;
     }
+
     position: absolute;
     overflow: hidden;
     z-index: 11;
@@ -265,6 +270,7 @@
 
     @if $UIRefresh2022 {
       overflow: clip;
+
       &.first {
         float: left;
       }
@@ -280,7 +286,9 @@
       &.fourth {
         float: right;
       }
-    } @else {
+    }
+
+    @else {
       &.first {
         &.selected {
           float: right;
@@ -383,6 +391,7 @@
     display: none;
 
     @include media-query-medium {
+
       &.right-view,
       &.left-view {
         justify-content: unset;
@@ -422,12 +431,15 @@
     &.show-all-quadrants-mobile {
       display: flex;
     }
+
     @include media-query-medium {
       --quadrant-btn-width-mobile: 345px;
       --quadrant-btn-height-mobile: 160px;
     }
+
     @include media-query-xlarge {
       display: none;
+
       &.show-all-quadrants-mobile {
         display: none;
       }
@@ -456,7 +468,7 @@
       }
 
       &::after {
-        content: url('/images/arrow-white-icon.svg');
+        content: url('./images/arrow-white-icon.svg');
         margin: 4px 4px 0;
       }
 
@@ -479,12 +491,15 @@
     #first-quadrant-mobile {
       background-color: $sapphire;
     }
+
     #second-quadrant-mobile {
       background-color: $turmeric;
     }
+
     #third-quadrant-mobile {
       background-color: $jade;
     }
+
     #fourth-quadrant-mobile {
       background-color: $flamingo;
     }
